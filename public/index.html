@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Earning Website</title>
+</head>
+<body>
+
+<h1>💰 My AI Blog</h1>
+
+<h2>Add Post</h2>
+<input id="title" placeholder="Title"><br><br>
+<textarea id="content" placeholder="Content"></textarea><br><br>
+<button onclick="addPost()">Publish</button>
+
+<h2>Posts</h2>
+<div id="posts"></div>
+
+<h2>📊 Analytics</h2>
+<p>Views: <span id="views">0</span></p>
+<p>Clicks: <span id="clicks">0</span></p>
+
+<button onclick="trackClick()">Test Click</button>
+
+<script>
+// Load posts
+async function loadPosts() {
+  const res = await fetch('/api/posts');
+  const data = await res.json();
+
+  const container = document.getElementById('posts');
+  container.innerHTML = '';
+
+  data.reverse().forEach(p => {
+    container.innerHTML += `<h3>${p.title}</h3><p>${p.content}</p>`;
+  });
+}
+
+// Add post
+async function addPost() {
+  const title = document.getElementById('title').value;
+  const content = document.getElementById('content').value;
+
+  await fetch('/api/posts', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ title, content })
+  });
+
+  loadPosts();
+}
+
+// Track view
+fetch('/api/track/view');
+
+// Track click
+function trackClick() {
+  fetch('/api/track/click');
+}
+
+// Load stats
+async function loadStats() {
+  const res = await fetch('/api/stats');
+  const data = await res.json();
+
+  document.getElementById('views').innerText = data.views;
+  document.getElementById('clicks').innerText = data.clicks;
+}
+
+setInterval(loadStats, 2000);
+
+loadPosts();
+loadStats();
+</script>
+
+</body>
+</html>
