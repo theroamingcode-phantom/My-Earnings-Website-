@@ -1,68 +1,78 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const fs = require('fs');
+const express = require("express");
+const path = require("path");
 
 const app = express();
-app.use(bodyParser.json());
-app.use(express.static('public'));
+const PORT = process.env.PORT || 3000;
 
-// Load data
-let posts = fs.existsSync('posts.json')
-  ? JSON.parse(fs.readFileSync('posts.json'))
-  : [];
+// ✅ Middleware
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
 
-let analytics = fs.existsSync('analytics.json')
-  ? JSON.parse(fs.readFileSync('analytics.json'))
-  : { views: 0, clicks: 0 };
+// ✅ Dummy database (in-memory)
+let posts = [];
+let stats = {
+  views: 0,
+  clicks: 0
+};
 
-// Routes
-app.get('/api/posts', (req, res) => {
+// =========================
+// ✅ ROUTES
+// =========================
+
+// 🔹 Get all posts
+app.get("/api/posts", (req, res) => {
   res.json(posts);
 });
 
-app.post('/api/posts', (req, res) => {
-  posts.push(req.body);
-  fs.writeFileSync('posts.json', JSON.stringify(posts));
-  res.json({ success: true });
-});
+// 🔹 Add post
+app.post("/api/posts", (req, res) => {
+  const { title, content } = req.body;
 
-// Tracking
-app.get('/api/track/view', (req, res) => {
-  analytics.views++;
-  fs.writeFileSync('analytics.json', JSON.stringify(analytics));
-  res.json({ success: true });
-});
-
-app.get('/api/track/click', (req, res) => {
-  analytics.clicks++;
-  fs.writeFileSync('analytics.json', JSON.stringify(analytics));
-  res.json({ success: true });
-});
-
-app.get('/api/stats', (req, res) => {
-  res.json(analytics);
-});
-
-app.listen(3000, () => console.log("Server running"));
-app.get('/api/auto-post', (req, res) => {
-
-  const topics = [
-    "How to earn money online",
-    "Best AI tools",
-    "Passive income ideas",
-    "Work from home jobs",
-    "Online business ideas"
-  ];
-
-  const randomTopic = topics[Math.floor(Math.random() * topics.length)];
+  if (!title || !content) {
+    return res.status(400).json({ error: "Title & content required" });
+  }
 
   const newPost = {
-    title: randomTopic,
-    content: randomTopic + " is one of the best ways to grow your income. Start today and stay consistent."
+    id: Date.now(),
+    title,
+    content
   };
 
   posts.push(newPost);
-  fs.writeFileSync('posts.json', JSON.stringify(posts));
+  res.json({ message: "Post added", post: newPost });
+});
 
-  res.json(newPost);
+// 🔹 Stats
+app.get("/api/stats", (req, res) => {
+  stats.views++;
+  res.json(stats);
+});
+
+// 🔹 Track click
+app.get("/api/track/click", (req, res) => {
+  stats.clicks++;
+  res.json({ success: true });
+});
+
+// 🔹 AI Generate (FIXED 🚀)
+app.get("/api/generate", (req, res) => {
+  res.json({
+    title: "🔥 AI Generated Blog Title",
+    content:
+      "Yeh ek demo AI generated content hai. Ab tumhara button perfectly kaam karega 🚀"
+  });
+});
+
+// =========================
+// ✅ ERROR HANDLER
+// =========================
+app.use((req, res) => {
+  res.status(404).json({ error: "Route not found ❌" });
+});
+
+// =========================
+// ✅ START SERVER
+// =========================
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
