@@ -65,6 +65,7 @@
 </head>
 
 <body>
+<button onclick="autoPost()">🤖 Generate AI Post</button>
 
 <header>💰 My AI Blog</header>
 
@@ -90,6 +91,20 @@
 </div>
 
 <script>
+<script>
+function autoPost() {
+    const posts = [
+        "💸 Earn money online easily!",
+        "🔥 Best side hustle ideas for 2026!",
+        "🚀 Start earning from your phone today!",
+        "💡 Passive income secrets revealed!"
+    ];
+
+    let randomPost = posts[Math.floor(Math.random() * posts.length)];
+
+    alert(randomPost);
+}
+</script>
 async function loadPosts() {
   const res = await fetch('/api/posts');
   const data = await res.json();
