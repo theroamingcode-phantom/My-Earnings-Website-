@@ -6,62 +6,50 @@ require("dotenv").config();
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// ===== IMPORTANT: ROUTES FIRST =====
+// ===== ROUTES =====
 
-// Root check
+// Root
 app.get("/", (req, res) => {
   res.send("Server is running 🚀");
 });
 
-// AI Generate Route
+// ✅ AI Generate (OpenRouter)
 app.get("/generate", async (req, res) => {
   try {
-    const HF_TOKEN = process.env.HF_TOKEN;
+    const API_KEY = process.env.OPENROUTER_API_KEY;
 
-    if (!HF_TOKEN) {
+    if (!API_KEY) {
       return res.json({
         title: "Error",
-        content: "HF_TOKEN missing ❌"
+        content: "OPENROUTER_API_KEY missing ❌"
       });
     }
 
     const response = await fetch(
-      "https://api-inference.huggingface.co/models/google/flan-t5-base",
+      "https://openrouter.ai/api/v1/chat/completions",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${HF_TOKEN}`,
+          "Authorization": `Bearer ${API_KEY}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          inputs: "Write a short professional blog about earning money online"
+          model: "openai/gpt-3.5-turbo",
+          messages: [
+            {
+              role: "user",
+              content: "Write a professional blog post about earning money online"
+            }
+          ]
         })
       }
     );
 
-    const raw = await response.text();
-    console.log("RAW RESPONSE:", raw);
-
-    let data;
-    try {
-      data = JSON.parse(raw);
-    } catch (err) {
-      return res.json({
-        title: "Error",
-        content: "Invalid response from AI (HTML आया) ❌"
-      });
-    }
-
-    if (data.error) {
-      return res.json({
-        title: "Error",
-        content: data.error
-      });
-    }
+    const data = await response.json();
+    console.log("AI RESPONSE:", data);
 
     const content =
-      data[0]?.generated_text ||
-      data[0]?.summary_text ||
+      data.choices?.[0]?.message?.content ||
       "No content generated";
 
     res.json({
@@ -70,7 +58,7 @@ app.get("/generate", async (req, res) => {
     });
 
   } catch (error) {
-    console.log("SERVER ERROR:", error);
+    console.error("ERROR:", error);
 
     res.json({
       title: "Error",
@@ -79,10 +67,10 @@ app.get("/generate", async (req, res) => {
   }
 });
 
-// ===== STATIC AFTER ROUTES =====
+// ===== STATIC FILES =====
 app.use(express.static(path.join(__dirname, "public")));
 
-// ===== START SERVER =====
+// ===== START =====
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
