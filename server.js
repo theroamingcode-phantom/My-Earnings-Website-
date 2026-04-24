@@ -1,45 +1,94 @@
 const express = require("express");
 const fs = require("fs");
+const path = require("path");
 const cors = require("cors");
-require("dotenv").config();
 
 const app = express();
-app.use(express.json());
+const PORT = process.env.PORT || 3000;
+
 app.use(cors());
+app.use(express.json());
 app.use(express.static("public"));
 
+// ✅ OpenAI setup
 const OpenAI = require("openai");
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// ✅ AI Generate Route (REAL AI)
+// ================== API ROUTES ==================
+
+// 👉 AI Generate Post
 app.get("/api/generate", async (req, res) => {
   try {
-    const response = await openai.chat.completions.create({
+    const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
           role: "user",
-          content: "Write a professional blog post about earning money online",
+          content:
+            "Write a professional blog post with a title and content about making money online.",
         },
       ],
     });
 
-    const text = response.choices[0].message.content;
+    const text = completion.choices[0].message.content;
 
-    res.json({
-      title: text.split("\n")[0] || "AI Blog",
-      content: text,
-    });
+    // Simple split (title + content)
+    const lines = text.split("\n");
+    const title = lines[0].replace(/#/g, "").trim();
+    const content = lines.slice(1).join("\n");
 
+    res.json({ title, content });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "AI generation failed" });
+    res.json({
+      title: "Error generating",
+      content: "Check API key or server logs",
+    });
   }
 });
 
-// बाकी routes same रहने दो (posts, stats etc.)
+// 👉 Get Posts
+app.get("/api/posts", (req, res) => {
+  const data = fs.readFileSync("posts.json");
+  res.json(JSON.parse(data));
+});
 
-app.listen(3000, () => console.log("Server running on port 3000"));
+// 👉 Add Post
+app.post("/api/posts", (req, res) => {
+  const { title, content } = req.body;
+
+  const posts = JSON.parse(fs.readFileSync("posts.json"));
+  posts.push({ title, content });
+
+  fs.writeFileSync("posts.json", JSON.stringify(posts, null, 2));
+
+  res.json({ success: true });
+});
+
+// 👉 Analytics
+app.get("/api/stats", (req, res) => {
+  const stats = JSON.parse(fs.readFileSync("analytics.json"));
+  res.json(stats);
+});
+
+app.get("/api/track/view", (req, res) => {
+  const stats = JSON.parse(fs.readFileSync("analytics.json"));
+  stats.views++;
+  fs.writeFileSync("analytics.json", JSON.stringify(stats, null, 2));
+  res.json({ success: true });
+});
+
+app.get("/api/track/click", (req, res) => {
+  const stats = JSON.parse(fs.readFileSync("analytics.json"));
+  stats.clicks++;
+  fs.writeFileSync("analytics.json", JSON.stringify(stats, null, 2));
+  res.json({ success: true });
+});
+
+// ================== START SERVER ==================
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
