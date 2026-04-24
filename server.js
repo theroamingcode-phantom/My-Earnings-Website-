@@ -1,87 +1,64 @@
-// ===== IMPORTS =====
 const express = require("express");
 const fetch = require("node-fetch");
-const path = require("path");
+require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// ===== MIDDLEWARE =====
-app.use(express.json());
 app.use(express.static("public"));
 
-// ===== HOME =====
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-
-// ===== AI GENERATE =====
 app.get("/generate", async (req, res) => {
   try {
-    const HF_TOKEN = process.env.HF_TOKEN;
-
-    if (!HF_TOKEN) {
-      return res.json({
-        title: "Error",
-        content: "HF_TOKEN missing ❌"
-      });
-    }
-
     const response = await fetch(
-      "https://api-inference.huggingface.co/models/google/flan-t5-base",
+      "https://api-inference.huggingface.co/models/gpt2",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${HF_TOKEN}`,
-          "Content-Type": "application/json"
+          Authorization: `Bearer ${process.env.HF_TOKEN}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          inputs: "Write a short blog post about earning money online."
-        })
+          inputs: "Write a short blog about making money online:",
+        }),
       }
     );
 
-    // 🔥 IMPORTANT: text first (not json)
-    const text = await response.text();
-    console.log("RAW RESPONSE:", text);
+    const text = await response.text(); // 🔥 important
 
     let data;
     try {
       data = JSON.parse(text);
     } catch (err) {
+      console.log("❌ Not JSON, raw response:", text);
       return res.json({
         title: "Error",
-        content: "Invalid response from AI ❌"
+        content: "Invalid response from AI (check token/model)",
       });
     }
 
-    let content = "No content generated";
-
-    // handle multiple formats
-    if (Array.isArray(data) && data[0]?.generated_text) {
-      content = data[0].generated_text;
-    } else if (data?.generated_text) {
-      content = data.generated_text;
-    } else if (data?.summary_text) {
-      content = data.summary_text;
+    if (data.error) {
+      return res.json({
+        title: "Error",
+        content: data.error,
+      });
     }
+
+    const output = data[0]?.generated_text || "No content generated";
 
     res.json({
       title: "AI Generated Blog",
-      content: content
+      content: output,
     });
 
   } catch (error) {
-    console.error("ERROR:", error);
-
+    console.log("🔥 Server Error:", error);
     res.json({
       title: "Error",
-      content: "AI generation failed ❌"
+      content: "AI generation failed",
     });
   }
 });
 
-// ===== START SERVER =====
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
