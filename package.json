@@ -1,22 +1,30 @@
 {
-  "name": "my-earning-site",
+  "name": "my-earnings-site",
   "version": "1.0.0",
-  "description": "AI Blog & Earnings Website",
+  "description": "AI Blog Website with OpenAI Integration",
   "main": "server.js",
+  "type": "commonjs",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
-  "keywords": ["ai", "blog", "openai", "earnings"],
-  "author": "your-name",
-  "license": "ISC",
+  "keywords": [
+    "ai",
+    "blog",
+    "openai",
+    "nodejs",
+    "express"
+  ],
+  "author": "The Roaming Code",
+  "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
+    "axios": "^1.6.8",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "openai": "^4.20.1"
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "openai": "^5.19.1"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.1.0"
   }
 }
