@@ -1,76 +1,45 @@
 const express = require("express");
-const path = require("path");
+const fs = require("fs");
+const cors = require("cors");
+require("dotenv").config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-// ✅ Middleware
 app.use(express.json());
+app.use(cors());
+app.use(express.static("public"));
 
-// =========================
-// ✅ API ROUTES (PEHLE)
-// =========================
+const OpenAI = require("openai");
 
-// 🔹 Generate AI Post
-app.get("/api/generate", (req, res) => {
-  res.json({
-    title: "🔥 AI Generated Title",
-    content: "Yeh AI generated demo content hai. Ab tumhara button perfectly kaam karega 🚀"
-  });
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
-// 🔹 Get posts
-let posts = [];
-app.get("/api/posts", (req, res) => {
-  res.json(posts);
-});
+// ✅ AI Generate Route (REAL AI)
+app.get("/api/generate", async (req, res) => {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "user",
+          content: "Write a professional blog post about earning money online",
+        },
+      ],
+    });
 
-// 🔹 Add post
-app.post("/api/posts", (req, res) => {
-  const { title, content } = req.body;
+    const text = response.choices[0].message.content;
 
-  if (!title || !content) {
-    return res.status(400).json({ error: "Title & Content required" });
+    res.json({
+      title: text.split("\n")[0] || "AI Blog",
+      content: text,
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "AI generation failed" });
   }
-
-  const newPost = {
-    id: Date.now(),
-    title,
-    content
-  };
-
-  posts.push(newPost);
-  res.json(newPost);
 });
 
-// 🔹 Stats
-let stats = { views: 0, clicks: 0 };
+// बाकी routes same रहने दो (posts, stats etc.)
 
-app.get("/api/stats", (req, res) => {
-  stats.views++;
-  res.json(stats);
-});
-
-app.get("/api/track/click", (req, res) => {
-  stats.clicks++;
-  res.json({ success: true });
-});
-
-// =========================
-// ⚠️ STATIC (BAAD ME)
-// =========================
-app.use(express.static(path.join(__dirname, "public")));
-
-// =========================
-// ❌ 404 HANDLER
-// =========================
-app.use((req, res) => {
-  res.status(404).json({ error: "Route not found ❌" });
-});
-
-// =========================
-// 🚀 START SERVER
-// =========================
-app.listen(PORT, () => {
-  console.log("Server running on port " + PORT);
-});
+app.listen(3000, () => console.log("Server running on port 3000"));
