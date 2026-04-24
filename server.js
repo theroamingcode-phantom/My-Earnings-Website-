@@ -4,35 +4,31 @@ const fetch = require("node-fetch");
 const path = require("path");
 
 const app = express();
-
-// ===== PORT =====
 const PORT = process.env.PORT || 10000;
 
 // ===== MIDDLEWARE =====
 app.use(express.json());
 app.use(express.static("public"));
 
-// ===== HOME ROUTE =====
+// ===== HOME =====
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// ===== AI GENERATE ROUTE =====
+// ===== AI GENERATE =====
 app.get("/generate", async (req, res) => {
   try {
     const HF_TOKEN = process.env.HF_TOKEN;
 
-    // ⚠️ अगर token missing hai
     if (!HF_TOKEN) {
       return res.json({
         title: "Error",
-        content: "HF_TOKEN missing hai ❌"
+        content: "HF_TOKEN missing ❌"
       });
     }
 
-    // Hugging Face API call
     const response = await fetch(
-      "https://api-inference.huggingface.co/models/gpt2",
+      "https://api-inference.huggingface.co/models/google/flan-t5-base",
       {
         method: "POST",
         headers: {
@@ -40,20 +36,34 @@ app.get("/generate", async (req, res) => {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          inputs: "Write a short blog post about earning money online:"
+          inputs: "Write a short blog post about earning money online."
         })
       }
     );
 
-    const data = await response.json();
+    // 🔥 IMPORTANT: text first (not json)
+    const text = await response.text();
+    console.log("RAW RESPONSE:", text);
 
-    console.log("HF RAW:", data);
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (err) {
+      return res.json({
+        title: "Error",
+        content: "Invalid response from AI ❌"
+      });
+    }
 
-    // 🧠 SAFE RESPONSE HANDLE
     let content = "No content generated";
 
+    // handle multiple formats
     if (Array.isArray(data) && data[0]?.generated_text) {
       content = data[0].generated_text;
+    } else if (data?.generated_text) {
+      content = data.generated_text;
+    } else if (data?.summary_text) {
+      content = data.summary_text;
     }
 
     res.json({
@@ -71,7 +81,7 @@ app.get("/generate", async (req, res) => {
   }
 });
 
-// ===== SERVER START =====
+// ===== START SERVER =====
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
