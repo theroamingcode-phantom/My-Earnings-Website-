@@ -1,16 +1,26 @@
 import express from "express";
+import mongoose from "mongoose";
 import fetch from "node-fetch";
-import path from "path";
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
+// MongoDB connect
+mongoose.connect(process.env.MONGO_URI)
+.then(()=> console.log("MongoDB Connected"))
+.catch(err => console.log(err));
+
+// Schema
+const Blog = mongoose.model("Blog", {
+  title: String,
+  content: String,
+  views: { type: Number, default: 0 }
+});
+
 app.use(express.json());
 app.use(express.static("public"));
 
-let blogs = []; // in-memory storage
-
-// AI Generate Route
+// AI Generate
 app.get("/generate", async (req, res) => {
   try {
     const topic = req.query.topic || "earn money online";
@@ -21,68 +31,49 @@ app.get("/generate", async (req, res) => {
         method: "POST",
         headers: {
           Authorization: `Bearer ${process.env.HF_TOKEN}`,
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          inputs: `Write a professional blog about ${topic}`,
-        }),
+          inputs: `Write a detailed blog on ${topic}`
+        })
       }
     );
 
     const data = await response.json();
 
     if (!Array.isArray(data)) {
-      return res.json({
-        title: "Error",
-        content: "Invalid AI response ❌",
-      });
+      return res.json({ title: "Error", content: "AI failed ❌" });
     }
 
-    const text = data[0]?.generated_text || "No content";
-
     res.json({
-      title: `Blog on ${topic}`,
-      content: text,
+      title: topic,
+      content: data[0].generated_text
     });
 
-  } catch (err) {
-    res.json({
-      title: "Error",
-      content: "AI generation failed ❌",
-    });
+  } catch {
+    res.json({ title: "Error", content: "Server error ❌" });
   }
 });
 
-// Save Blog
-app.post("/save", (req, res) => {
-  const { title, content } = req.body;
-
-  blogs.push({
-    id: Date.now(),
-    title,
-    content,
-    views: 0,
-  });
-
+// Save blog
+app.post("/save", async (req, res) => {
+  const blog = new Blog(req.body);
+  await blog.save();
   res.json({ message: "Saved ✅" });
 });
 
-// Get Blogs
-app.get("/blogs", (req, res) => {
+// Get all blogs
+app.get("/blogs", async (req, res) => {
+  const blogs = await Blog.find().sort({ _id: -1 });
   res.json(blogs);
 });
 
-// View Blog
-app.get("/view/:id", (req, res) => {
-  const blog = blogs.find(b => b.id == req.params.id);
-  if (blog) {
-    blog.views++;
-    res.json(blog);
-  } else {
-    res.status(404).send("Not found");
-  }
+// View blog
+app.get("/view/:id", async (req, res) => {
+  const blog = await Blog.findById(req.params.id);
+  blog.views++;
+  await blog.save();
+  res.json(blog);
 });
 
-app.listen(PORT, () => {
-  console.log("Server running on port", PORT);
-});
+app.listen(PORT, () => console.log("Server running 🚀"));
