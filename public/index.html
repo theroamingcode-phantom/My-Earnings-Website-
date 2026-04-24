@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AI Blog Generator</title>
+  <title>My AI Blog</title>
 
   <style>
     body {
@@ -11,78 +11,118 @@
       background: #0f172a;
       color: white;
       padding: 20px;
-      text-align: center;
     }
 
     h1 {
-      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 6px;
+      border: none;
     }
 
     button {
-      padding: 12px 20px;
-      background: #22c55e;
+      margin-top: 10px;
+      padding: 10px;
+      width: 100%;
       border: none;
-      border-radius: 8px;
-      color: white;
-      font-size: 16px;
+      border-radius: 6px;
+      background: #38bdf8;
+      color: black;
+      font-weight: bold;
       cursor: pointer;
-    }
-
-    button:hover {
-      background: #16a34a;
-    }
-
-    textarea {
-      width: 90%;
-      height: 150px;
-      margin-top: 15px;
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-    }
-
-    input {
-      width: 90%;
-      padding: 10px;
-      margin-top: 15px;
-      border-radius: 8px;
-      border: none;
     }
 
     .box {
       background: #1e293b;
-      padding: 20px;
-      border-radius: 12px;
-      margin-top: 20px;
+      padding: 15px;
+      margin-top: 15px;
+      border-radius: 10px;
     }
   </style>
 </head>
+
 <body>
 
-  <h1>🚀 AI Blog Generator</h1>
+  <h1>💰 My AI Blog</h1>
 
-  <button onclick="generatePost()">Generate AI Post</button>
+  <div class="container">
 
-  <div class="box">
-    <input id="title" placeholder="Blog Title..." />
-    <textarea id="content" placeholder="Blog Content..."></textarea>
+    <button onclick="generatePost()">🤖 Generate AI Post</button>
+
+    <div class="box">
+      <h3>Add Post</h3>
+
+      <input id="title" placeholder="Title..." />
+      <textarea id="content" rows="5" placeholder="Content..."></textarea>
+
+      <button onclick="publishPost()">Publish</button>
+    </div>
+
+    <div class="box">
+      <h3>📄 Posts</h3>
+      <div id="posts"></div>
+    </div>
+
   </div>
 
   <script>
     async function generatePost() {
       try {
-        const res = await fetch("/generate"); // ✅ correct route
-        const data = await res.json();
+        const res = await fetch("/generate");
 
-        console.log("API Response:", data);
+        // 👇 RAW response debug
+        const text = await res.text();
+        console.log("RAW RESPONSE:", text);
 
-        document.getElementById("title").value = data.title || "No title";
-        document.getElementById("content").value = data.content || "No content";
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          alert("Server JSON nahi bhej raha ❌ (console check karo)");
+          return;
+        }
+
+        document.getElementById("title").value = data.title || "";
+        document.getElementById("content").value = data.content || "";
 
       } catch (err) {
-        alert("Error: " + err.message);
         console.error(err);
+        alert("Error fetching AI post ❌");
       }
+    }
+
+    function publishPost() {
+      const title = document.getElementById("title").value;
+      const content = document.getElementById("content").value;
+
+      if (!title || !content) {
+        alert("Title aur content required hai");
+        return;
+      }
+
+      const postDiv = document.createElement("div");
+      postDiv.style.marginTop = "10px";
+      postDiv.style.padding = "10px";
+      postDiv.style.background = "#334155";
+      postDiv.style.borderRadius = "6px";
+
+      postDiv.innerHTML = `<h4>${title}</h4><p>${content}</p>`;
+
+      document.getElementById("posts").prepend(postDiv);
+
+      // clear fields
+      document.getElementById("title").value = "";
+      document.getElementById("content").value = "";
     }
   </script>
 
