@@ -4,79 +4,189 @@
   <meta charset="UTF-8">
   <title>My AI Blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      color: white;
+      padding: 15px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #38bdf8;
+    }
+
+    .card {
+      background: #1e293b;
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+      background: #0f172a;
+      color: white;
+    }
+
+    textarea {
+      height: 100px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 12px;
+      border: none;
+      border-radius: 8px;
+      background: #38bdf8;
+      color: black;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #0ea5e9;
+    }
+
+    .post {
+      background: #0f172a;
+      padding: 10px;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+
+    .post h3 {
+      color: #38bdf8;
+    }
+
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+
+    .stats div {
+      background: #0f172a;
+      padding: 10px;
+      border-radius: 8px;
+      width: 48%;
+      text-align: center;
+    }
+
+  </style>
 </head>
 
-<body style="background:#0b132b; color:white; font-family:sans-serif;">
+<body>
+
+<div class="container">
 
   <h1>💰 My AI Blog</h1>
 
-  <button onclick="generatePost()">🤖 Generate AI Post</button>
+  <!-- AI Button -->
+  <div class="card">
+    <button onclick="generatePost()">🤖 Generate AI Post</button>
+  </div>
 
-  <h2>Add Post</h2>
-  <input id="title" placeholder="Title"><br><br>
-  <textarea id="content" placeholder="Content"></textarea><br><br>
-  <button onclick="addPost()">Publish</button>
+  <!-- Add Post -->
+  <div class="card">
+    <h2>Add Post</h2>
+    <input id="title" placeholder="Enter title">
+    <textarea id="content" placeholder="Write content..."></textarea>
+    <button onclick="addPost()">Publish</button>
+  </div>
 
-  <h2>Posts</h2>
-  <div id="posts"></div>
+  <!-- Posts -->
+  <div class="card">
+    <h2>📄 Posts</h2>
+    <div id="posts"></div>
+  </div>
 
-  <h2>Analytics</h2>
-  <p>Views: <span id="views">0</span></p>
-  <p>Clicks: <span id="clicks">0</span></p>
+  <!-- Analytics -->
+  <div class="card">
+    <h2>📊 Analytics</h2>
+    <div class="stats">
+      <div>Views: <span id="views">0</span></div>
+      <div>Clicks: <span id="clicks">0</span></div>
+    </div>
+  </div>
 
-  <!-- ✅ IMPORTANT: Script yaha hona chahiye -->
-  <script>
-    async function loadPosts() {
-      const res = await fetch('/api/posts');
-      const data = await res.json();
+</div>
 
-      const container = document.getElementById('posts');
-      container.innerHTML = '';
+<script>
+async function loadPosts() {
+  const res = await fetch('/api/posts');
+  const data = await res.json();
 
-      data.reverse().forEach(p => {
-        container.innerHTML += `
-          <div style="border:1px solid white; margin:10px; padding:10px;">
-            <h3>${p.title}</h3>
-            <p>${p.content}</p>
-          </div>
-        `;
-      });
-    }
+  const container = document.getElementById('posts');
+  container.innerHTML = '';
 
-    async function addPost() {
-      const title = document.getElementById('title').value;
-      const content = document.getElementById('content').value;
+  data.reverse().forEach(p => {
+    container.innerHTML += `
+      <div class="post">
+        <h3>${p.title}</h3>
+        <p>${p.content}</p>
+      </div>
+    `;
+  });
+}
 
-      await fetch('/api/posts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content })
-      });
+async function addPost() {
+  const title = document.getElementById('title').value;
+  const content = document.getElementById('content').value;
 
-      loadPosts();
-    }
+  await fetch('/api/posts', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ title, content })
+  });
 
-    async function loadStats() {
-      const res = await fetch('/api/stats');
-      const data = await res.json();
+  loadPosts();
+}
 
-      document.getElementById('views').innerText = data.views;
-      document.getElementById('clicks').innerText = data.clicks;
-    }
+async function loadStats() {
+  const res = await fetch('/api/stats');
+  const data = await res.json();
 
-    async function generatePost() {
-      alert("Button working"); // test ke liye
+  document.getElementById('views').innerText = data.views;
+  document.getElementById('clicks').innerText = data.clicks;
+}
 
-      const res = await fetch('/api/generate');
-      const data = await res.json();
+async function generatePost() {
+  const res = await fetch('/api/generate');
+  const data = await res.json();
 
-      document.getElementById('title').value = data.title;
-      document.getElementById('content').value = data.content;
-    }
+  document.getElementById('title').value = data.title;
+  document.getElementById('content').value = data.content;
+}
 
-    loadPosts();
-    loadStats();
-  </script>
+loadPosts();
+loadStats();
+</script>
 
 </body>
 </html>
