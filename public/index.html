@@ -205,5 +205,11 @@ async function generatePost() {
   }
 }
 </script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.querySelector("button");
+  btn.addEventListener("click", generatePost);
+});
+</script>
 </body>
 </html>
