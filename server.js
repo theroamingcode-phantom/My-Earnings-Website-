@@ -1,74 +1,88 @@
-const express = require("express");
-const fetch = require("node-fetch");
-const path = require("path");
-require("dotenv").config();
+import express from "express";
+import fetch from "node-fetch";
+import path from "path";
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// ===== SERVE STATIC FILES =====
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.json());
+app.use(express.static("public"));
 
-// ===== HOMEPAGE (IMPORTANT FIX) =====
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
+let blogs = []; // in-memory storage
 
-// ===== AI GENERATE ROUTE =====
+// AI Generate Route
 app.get("/generate", async (req, res) => {
   try {
-    const API_KEY = process.env.OPENROUTER_API_KEY;
-
-    if (!API_KEY) {
-      return res.json({
-        title: "Error",
-        content: "OPENROUTER_API_KEY missing ❌"
-      });
-    }
+    const topic = req.query.topic || "earn money online";
 
     const response = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
+      "https://api-inference.huggingface.co/models/gpt2",
       {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${API_KEY}`,
-          "Content-Type": "application/json"
+          Authorization: `Bearer ${process.env.HF_TOKEN}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "openai/gpt-3.5-turbo",
-          messages: [
-            {
-              role: "user",
-              content: "Write an SEO optimized blog post with headings about earning money online"
-            }
-          ]
-        })
+          inputs: `Write a professional blog about ${topic}`,
+        }),
       }
     );
 
     const data = await response.json();
-    console.log("AI RESPONSE:", data);
 
-    const content =
-      data.choices?.[0]?.message?.content ||
-      "No content generated";
+    if (!Array.isArray(data)) {
+      return res.json({
+        title: "Error",
+        content: "Invalid AI response ❌",
+      });
+    }
+
+    const text = data[0]?.generated_text || "No content";
 
     res.json({
-      title: "AI Generated Blog",
-      content: content
+      title: `Blog on ${topic}`,
+      content: text,
     });
 
-  } catch (error) {
-    console.error("ERROR:", error);
-
+  } catch (err) {
     res.json({
       title: "Error",
-      content: "AI generation failed ❌"
+      content: "AI generation failed ❌",
     });
   }
 });
 
-// ===== START SERVER =====
+// Save Blog
+app.post("/save", (req, res) => {
+  const { title, content } = req.body;
+
+  blogs.push({
+    id: Date.now(),
+    title,
+    content,
+    views: 0,
+  });
+
+  res.json({ message: "Saved ✅" });
+});
+
+// Get Blogs
+app.get("/blogs", (req, res) => {
+  res.json(blogs);
+});
+
+// View Blog
+app.get("/view/:id", (req, res) => {
+  const blog = blogs.find(b => b.id == req.params.id);
+  if (blog) {
+    blog.views++;
+    res.json(blog);
+  } else {
+    res.status(404).send("Not found");
+  }
+});
+
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log("Server running on port", PORT);
 });
