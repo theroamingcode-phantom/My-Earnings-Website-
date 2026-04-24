@@ -1,17 +1,14 @@
 {
-  "name": "ai-blog-generator",
+  "name": "ai-blog",
   "version": "1.0.0",
-  "description": "AI Blog Generator using OpenRouter",
+  "type": "module",
   "main": "server.js",
-  "type": "commonjs",
   "scripts": {
     "start": "node server.js"
   },
-  "author": "The Roaming Code",
-  "license": "ISC",
   "dependencies": {
     "express": "^4.18.2",
-    "node-fetch": "^2.6.7",
-    "dotenv": "^16.4.5"
+    "mongoose": "^8.0.0",
+    "node-fetch": "^3.3.2"
   }
 }
