@@ -1,1 +1,8 @@
-{ "views": 0, "clicks": 0 }
+{
+  "views": 0,
+  "clicks": 0,
+  "postsCreated": 0,
+  "aiGenerations": 0,
+  "lastUpdated": "2026-01-01T00:00:00.000Z",
+  "history": []
+}
