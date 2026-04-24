@@ -7,10 +7,14 @@
 
   <style>
     body {
-      font-family: Arial;
+      font-family: Arial, sans-serif;
       background: #0f172a;
       color: white;
       padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
     }
 
     .container {
@@ -28,11 +32,12 @@
 
     button {
       margin-top: 10px;
-      padding: 10px;
+      padding: 12px;
       width: 100%;
-      background: #38bdf8;
       border: none;
       border-radius: 6px;
+      background: #38bdf8;
+      color: black;
       font-weight: bold;
       cursor: pointer;
     }
@@ -43,51 +48,55 @@
       margin-top: 15px;
       border-radius: 10px;
     }
+
+    .loading {
+      text-align: center;
+      margin-top: 10px;
+      color: #94a3b8;
+    }
   </style>
 </head>
 
 <body>
 
-<h1>🤖 AI Blog Generator</h1>
+  <h1>🤖 AI Blog Generator</h1>
 
-<div class="container">
+  <div class="container">
 
-  <button onclick="generatePost()">Generate AI Post</button>
+    <button onclick="generatePost()">Generate AI Post</button>
 
-  <div class="box">
-    <input id="title" placeholder="Title" />
-    <textarea id="content" rows="5" placeholder="Content"></textarea>
+    <div class="loading" id="loading" style="display:none;">
+      Generating... ⏳
+    </div>
+
+    <div class="box">
+      <input id="title" placeholder="Title..." />
+      <textarea id="content" rows="6" placeholder="Content..."></textarea>
+    </div>
+
   </div>
 
-</div>
+  <script>
+    async function generatePost() {
+      const loading = document.getElementById("loading");
+      loading.style.display = "block";
 
-<script>
-async function generatePost() {
-  try {
-    // 🔥 FULL URL use karo (important)
-    const res = await fetch(window.location.origin + "/generate");
+      try {
+        const res = await fetch(window.location.origin + "/generate");
 
-    const text = await res.text();
-    console.log("RAW:", text);
+        const data = await res.json();
 
-    let data;
+        document.getElementById("title").value = data.title || "";
+        document.getElementById("content").value = data.content || "";
 
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      alert("Server se HTML aa raha hai ❌ (console check karo)");
-      return;
+      } catch (err) {
+        console.error(err);
+        alert("Error generating post ❌");
+      }
+
+      loading.style.display = "none";
     }
-
-    document.getElementById("title").value = data.title || "";
-    document.getElementById("content").value = data.content || "";
-
-  } catch (err) {
-    console.error(err);
-    alert("Fetch error ❌");
-  }
-}
-</script>
+  </script>
 
 </body>
 </html>
