@@ -5,12 +5,21 @@ require("dotenv").config();
 const app = express();
 const PORT = process.env.PORT || 10000;
 
+// static folder (frontend)
 app.use(express.static("public"));
 
+// test route
+app.get("/", (req, res) => {
+  res.send("Server is running 🚀");
+});
+
+// AI generate route
 app.get("/generate", async (req, res) => {
   try {
+    const MODEL = "google/flan-t5-base";
+
     const response = await fetch(
-      "https://api-inference.huggingface.co/models/gpt2",
+      `https://api-inference.huggingface.co/models/${MODEL}`,
       {
         method: "POST",
         headers: {
@@ -18,24 +27,26 @@ app.get("/generate", async (req, res) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          inputs: "Write a short blog about making money online:",
+          inputs: "Write a short blog about earning money online",
         }),
       }
     );
 
-    const text = await response.text(); // 🔥 important
+    // 🔥 important: text first
+    const raw = await response.text();
+    console.log("RAW RESPONSE:", raw);
 
     let data;
     try {
-      data = JSON.parse(text);
+      data = JSON.parse(raw);
     } catch (err) {
-      console.log("❌ Not JSON, raw response:", text);
       return res.json({
         title: "Error",
-        content: "Invalid response from AI (check token/model)",
+        content: "Invalid response from AI (HTML मिला)",
       });
     }
 
+    // ❌ error from HF
     if (data.error) {
       return res.json({
         title: "Error",
@@ -43,15 +54,18 @@ app.get("/generate", async (req, res) => {
       });
     }
 
-    const output = data[0]?.generated_text || "No content generated";
+    // ✅ success
+    const output =
+      data[0]?.generated_text ||
+      data[0]?.summary_text ||
+      "No content generated";
 
     res.json({
       title: "AI Generated Blog",
       content: output,
     });
-
   } catch (error) {
-    console.log("🔥 Server Error:", error);
+    console.log("SERVER ERROR:", error);
     res.json({
       title: "Error",
       content: "AI generation failed",
