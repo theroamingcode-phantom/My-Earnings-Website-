@@ -6,14 +6,15 @@ require("dotenv").config();
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// ===== ROUTES =====
+// ===== SERVE STATIC FILES =====
+app.use(express.static(path.join(__dirname, "public")));
 
-// Root
+// ===== HOMEPAGE (IMPORTANT FIX) =====
 app.get("/", (req, res) => {
-  res.send("Server is running 🚀");
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// ✅ AI Generate (OpenRouter)
+// ===== AI GENERATE ROUTE =====
 app.get("/generate", async (req, res) => {
   try {
     const API_KEY = process.env.OPENROUTER_API_KEY;
@@ -38,7 +39,7 @@ app.get("/generate", async (req, res) => {
           messages: [
             {
               role: "user",
-              content: "Write a professional blog post about earning money online"
+              content: "Write an SEO optimized blog post with headings about earning money online"
             }
           ]
         })
@@ -67,10 +68,7 @@ app.get("/generate", async (req, res) => {
   }
 });
 
-// ===== STATIC FILES =====
-app.use(express.static(path.join(__dirname, "public")));
-
-// ===== START =====
+// ===== START SERVER =====
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
