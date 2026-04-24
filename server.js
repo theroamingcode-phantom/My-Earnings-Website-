@@ -1,74 +1,58 @@
-import express from "express";
-import cors from "cors";
-import fetch from "node-fetch";
-import dotenv from "dotenv";
-
-dotenv.config();
+const express = require("express");
+const cors = require("cors");
+require("dotenv").config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ================= AI GENERATE =================
+// ✅ Home route (fixes "Cannot GET /")
+app.get("/", (req, res) => {
+  res.send("🚀 Server is running successfully!");
+});
+
+// ✅ AI Generate Route
 app.get("/api/generate", async (req, res) => {
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "user",
-            content:
-              "Write a professional blog post about earning money online with a title and detailed content."
-          }
-        ]
-      })
-    });
+    const response = await fetch(
+      "https://api-inference.huggingface.co/models/gpt2",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.HF_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          inputs:
+            "Write a professional and detailed blog post about earning money online in 2025:",
+        }),
+      }
+    );
 
     const data = await response.json();
 
-    // 🔥 DEBUG (logs me dikhega)
-    console.log("OpenAI Response:", JSON.stringify(data, null, 2));
+    console.log("HF Response:", data);
 
-    let text = "";
-
-    if (data.choices && data.choices.length > 0) {
-      if (data.choices[0].message && data.choices[0].message.content) {
-        text = data.choices[0].message.content;
-      } else if (data.choices[0].text) {
-        text = data.choices[0].text;
-      }
-    }
-
-    if (!text) {
-      return res.json({
-        title: "Error",
-        content: "No content generated. Check logs."
-      });
-    }
+    const content =
+      data && data[0] && data[0].generated_text
+        ? data[0].generated_text
+        : "No content generated";
 
     res.json({
       title: "AI Generated Blog",
-      content: text
+      content: content,
     });
-
   } catch (error) {
-    console.error("AI ERROR:", error);
-
+    console.error("Error:", error);
     res.json({
       title: "Error",
-      content: "AI generation failed. Check API key or logs."
+      content: "AI generation failed. Check API key or logs.",
     });
   }
 });
 
-// ================= START SERVER =================
-const PORT = process.env.PORT || 10000;
+// ✅ Start server
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
