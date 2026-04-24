@@ -1,123 +1,166 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>AI Blog Generator</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>AI SaaS Blog Generator</title>
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  display: flex;
+  background: #0f172a;
+  color: white;
+}
 
-  <!-- Google Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+/* Sidebar */
+.sidebar {
+  width: 220px;
+  background: #020617;
+  padding: 20px;
+  height: 100vh;
+}
 
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Poppins', sans-serif;
-    }
+.sidebar h2 {
+  color: #38bdf8;
+}
 
-    body {
-      background: linear-gradient(135deg, #0f172a, #1e293b);
-      color: white;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
+.sidebar button {
+  width: 100%;
+  margin: 10px 0;
+  padding: 10px;
+  background: #1e293b;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
 
-    .container {
-      width: 90%;
-      max-width: 700px;
-      background: rgba(255,255,255,0.05);
-      backdrop-filter: blur(15px);
-      border-radius: 20px;
-      padding: 30px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
-      text-align: center;
-    }
+/* Main */
+.main {
+  flex: 1;
+  padding: 20px;
+}
 
-    h1 {
-      font-size: 28px;
-      margin-bottom: 20px;
-      font-weight: 700;
-    }
+/* Top */
+.topbar {
+  display: flex;
+  justify-content: space-between;
+}
 
-    button {
-      background: linear-gradient(135deg, #38bdf8, #6366f1);
-      border: none;
-      padding: 12px 25px;
-      border-radius: 10px;
-      color: white;
-      font-size: 16px;
-      cursor: pointer;
-      transition: 0.3s;
-      margin-bottom: 20px;
-    }
+/* Card */
+.card {
+  background: #1e293b;
+  padding: 20px;
+  border-radius: 10px;
+  margin-top: 20px;
+}
 
-    button:hover {
-      transform: scale(1.05);
-      box-shadow: 0 5px 20px rgba(99,102,241,0.6);
-    }
+/* Buttons */
+.btn {
+  padding: 10px 15px;
+  background: #38bdf8;
+  border: none;
+  cursor: pointer;
+  color: black;
+  font-weight: bold;
+}
 
-    .output {
-      background: #0f172a;
-      border-radius: 10px;
-      padding: 20px;
-      text-align: left;
-      max-height: 300px;
-      overflow-y: auto;
-    }
-
-    .title {
-      font-size: 20px;
-      font-weight: 600;
-      margin-bottom: 10px;
-      color: #38bdf8;
-    }
-
-    .loading {
-      display: none;
-      margin-top: 10px;
-      font-size: 14px;
-      color: #94a3b8;
-    }
-
-  </style>
+textarea {
+  width: 100%;
+  height: 200px;
+  margin-top: 10px;
+}
+</style>
 </head>
 
 <body>
 
-<div class="container">
-  <h1>🤖 AI Blog Generator</h1>
+<!-- Sidebar -->
+<div class="sidebar">
+  <h2>🤖 AI SaaS</h2>
+  <button onclick="showPage('dashboard')">Dashboard</button>
+  <button onclick="showPage('generator')">Generate</button>
+  <button onclick="showPage('history')">History</button>
+</div>
 
-  <button onclick="generateBlog()">Generate Blog</button>
+<!-- Main -->
+<div class="main">
 
-  <div class="loading" id="loading">⏳ Generating AI content...</div>
+<div class="topbar">
+  <h2>AI Blog Generator</h2>
+  <button class="btn">Upgrade</button>
+</div>
 
-  <div class="output">
-    <div class="title" id="title">Your blog will appear here...</div>
-    <div id="content"></div>
+<!-- Dashboard -->
+<div id="dashboard" class="page">
+  <div class="card">
+    <h3>Total Blogs: <span id="count">0</span></h3>
+    <h3>Total Views: <span id="views">0</span></h3>
   </div>
 </div>
 
+<!-- Generator -->
+<div id="generator" class="page" style="display:none;">
+  <div class="card">
+    <button class="btn" onclick="generate()">Generate Blog</button>
+    <textarea id="output"></textarea>
+
+    <button class="btn" onclick="saveBlog()">Publish</button>
+  </div>
+</div>
+
+<!-- History -->
+<div id="history" class="page" style="display:none;">
+  <div class="card">
+    <h3>Saved Blogs</h3>
+    <div id="list"></div>
+  </div>
+</div>
+
+</div>
+
 <script>
-  async function generateBlog() {
-    document.getElementById("loading").style.display = "block";
 
-    try {
-      const res = await fetch("/generate");
-      const data = await res.json();
+let blogs = [];
+let views = 0;
 
-      document.getElementById("title").innerText = data.title;
-      document.getElementById("content").innerText = data.content;
+function showPage(page){
+  document.querySelectorAll(".page").forEach(p => p.style.display="none");
+  document.getElementById(page).style.display="block";
+}
 
-    } catch (err) {
-      document.getElementById("title").innerText = "Error ❌";
-      document.getElementById("content").innerText = "Failed to fetch AI blog.";
-    }
+async function generate(){
+  const res = await fetch("/generate");
+  const data = await res.json();
+  document.getElementById("output").value = data.content;
+}
 
-    document.getElementById("loading").style.display = "none";
-  }
+function saveBlog(){
+  const text = document.getElementById("output").value;
+
+  if(!text) return alert("Generate first");
+
+  blogs.push(text);
+  views += 10;
+
+  document.getElementById("count").innerText = blogs.length;
+  document.getElementById("views").innerText = views;
+
+  renderBlogs();
+}
+
+function renderBlogs(){
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+
+  blogs.forEach((b,i)=>{
+    list.innerHTML += `
+      <div style="background:#334155;margin:10px;padding:10px">
+        <p>${b.substring(0,100)}...</p>
+      </div>
+    `;
+  });
+}
+
 </script>
 
 </body>
