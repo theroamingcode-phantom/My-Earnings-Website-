@@ -1,38 +1,44 @@
 const express = require("express");
 const fetch = require("node-fetch");
+const path = require("path");
 require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// static folder (frontend)
-app.use(express.static("public"));
+// ===== IMPORTANT: ROUTES FIRST =====
 
-// test route
+// Root check
 app.get("/", (req, res) => {
   res.send("Server is running 🚀");
 });
 
-// AI generate route
+// AI Generate Route
 app.get("/generate", async (req, res) => {
   try {
-    const MODEL = "google/flan-t5-base";
+    const HF_TOKEN = process.env.HF_TOKEN;
+
+    if (!HF_TOKEN) {
+      return res.json({
+        title: "Error",
+        content: "HF_TOKEN missing ❌"
+      });
+    }
 
     const response = await fetch(
-      `https://api-inference.huggingface.co/models/${MODEL}`,
+      "https://api-inference.huggingface.co/models/google/flan-t5-base",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.HF_TOKEN}`,
-          "Content-Type": "application/json",
+          Authorization: `Bearer ${HF_TOKEN}`,
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          inputs: "Write a short blog about earning money online",
-        }),
+          inputs: "Write a short professional blog about earning money online"
+        })
       }
     );
 
-    // 🔥 important: text first
     const raw = await response.text();
     console.log("RAW RESPONSE:", raw);
 
@@ -42,37 +48,41 @@ app.get("/generate", async (req, res) => {
     } catch (err) {
       return res.json({
         title: "Error",
-        content: "Invalid response from AI (HTML मिला)",
+        content: "Invalid response from AI (HTML आया) ❌"
       });
     }
 
-    // ❌ error from HF
     if (data.error) {
       return res.json({
         title: "Error",
-        content: data.error,
+        content: data.error
       });
     }
 
-    // ✅ success
-    const output =
+    const content =
       data[0]?.generated_text ||
       data[0]?.summary_text ||
       "No content generated";
 
     res.json({
       title: "AI Generated Blog",
-      content: output,
+      content: content
     });
+
   } catch (error) {
     console.log("SERVER ERROR:", error);
+
     res.json({
       title: "Error",
-      content: "AI generation failed",
+      content: "AI generation failed ❌"
     });
   }
 });
 
+// ===== STATIC AFTER ROUTES =====
+app.use(express.static(path.join(__dirname, "public")));
+
+// ===== START SERVER =====
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
