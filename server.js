@@ -2,17 +2,20 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 
+// Node 18+ me fetch built-in hota hai (Render pe hota hai)
+// agar error aaye to npm install node-fetch kar lena
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ Home route (fixes "Cannot GET /")
+// ✅ Root check
 app.get("/", (req, res) => {
-  res.send("🚀 Server is running successfully!");
+  res.send("Server is running 🚀");
 });
 
 // ✅ AI Generate Route
-app.get("/api/generate", async (req, res) => {
+app.get("/generate", async (req, res) => {
   try {
     const response = await fetch(
       "https://api-inference.huggingface.co/models/gpt2",
@@ -23,8 +26,7 @@ app.get("/api/generate", async (req, res) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          inputs:
-            "Write a professional and detailed blog post about earning money online in 2025:",
+          inputs: "Write a short blog post about earning money online in simple words.",
         }),
       }
     );
@@ -33,20 +35,22 @@ app.get("/api/generate", async (req, res) => {
 
     console.log("HF Response:", data);
 
-    const content =
-      data && data[0] && data[0].generated_text
-        ? data[0].generated_text
-        : "No content generated";
+    let content = "No content generated";
+
+    if (Array.isArray(data) && data[0]?.generated_text) {
+      content = data[0].generated_text;
+    }
 
     res.json({
       title: "AI Generated Blog",
       content: content,
     });
   } catch (error) {
-    console.error("Error:", error);
+    console.error("ERROR:", error);
+
     res.json({
       title: "Error",
-      content: "AI generation failed. Check API key or logs.",
+      content: "AI generation failed",
     });
   }
 });
@@ -54,5 +58,5 @@ app.get("/api/generate", async (req, res) => {
 // ✅ Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
+  console.log("Server running on port " + PORT);
 });
