@@ -1,79 +1,100 @@
-import express from "express";
-import mongoose from "mongoose";
-import fetch from "node-fetch";
+const express = require("express");
+const fetch = require("node-fetch");
+const path = require("path");
+require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// MongoDB connect
-mongoose.connect(process.env.MONGO_URI)
-.then(()=> console.log("MongoDB Connected"))
-.catch(err => console.log(err));
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
 
-// Schema
-const Blog = mongoose.model("Blog", {
-  title: String,
-  content: String,
-  views: { type: Number, default: 0 }
+// ===== DATABASE (temporary memory) =====
+let blogs = [];
+
+// ===== HOME =====
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-app.use(express.json());
-app.use(express.static("public"));
-
-// AI Generate
+// ===== AI GENERATE (FIXED) =====
 app.get("/generate", async (req, res) => {
   try {
     const topic = req.query.topic || "earn money online";
 
-    const response = await fetch(
-      "https://api-inference.huggingface.co/models/gpt2",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.HF_TOKEN}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          inputs: `Write a detailed blog on ${topic}`
-        })
-      }
-    );
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "openai/gpt-3.5-turbo",
+        messages: [
+          {
+            role: "user",
+            content: `Write a professional blog about ${topic}`
+          }
+        ]
+      })
+    });
 
     const data = await response.json();
 
-    if (!Array.isArray(data)) {
-      return res.json({ title: "Error", content: "AI failed ❌" });
+    if (!data || !data.choices) {
+      return res.json({
+        title: "Error",
+        content: "Invalid AI response ❌"
+      });
     }
 
     res.json({
-      title: topic,
-      content: data[0].generated_text
+      title: `Blog on ${topic}`,
+      content: data.choices[0].message.content
     });
 
-  } catch {
-    res.json({ title: "Error", content: "Server error ❌" });
+  } catch (err) {
+    console.error("AI ERROR:", err);
+
+    res.json({
+      title: "Error",
+      content: "AI generation failed ❌"
+    });
   }
 });
 
-// Save blog
-app.post("/save", async (req, res) => {
-  const blog = new Blog(req.body);
-  await blog.save();
+// ===== SAVE BLOG =====
+app.post("/save", (req, res) => {
+  const { title, content } = req.body;
+
+  blogs.push({
+    id: Date.now(),
+    title,
+    content,
+    views: 0
+  });
+
   res.json({ message: "Saved ✅" });
 });
 
-// Get all blogs
-app.get("/blogs", async (req, res) => {
-  const blogs = await Blog.find().sort({ _id: -1 });
+// ===== GET BLOGS =====
+app.get("/blogs", (req, res) => {
   res.json(blogs);
 });
 
-// View blog
-app.get("/view/:id", async (req, res) => {
-  const blog = await Blog.findById(req.params.id);
+// ===== VIEW BLOG =====
+app.get("/view/:id", (req, res) => {
+  const blog = blogs.find(b => b.id == req.params.id);
+
+  if (!blog) {
+    return res.status(404).json({ error: "Not found" });
+  }
+
   blog.views++;
-  await blog.save();
   res.json(blog);
 });
 
-app.listen(PORT, () => console.log("Server running 🚀"));
+// ===== START =====
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
