@@ -187,6 +187,23 @@ async function generatePost() {
 loadPosts();
 loadStats();
 </script>
+<script>
 
+async function generatePost() {
+  alert("Button clicked ✅"); // test
+
+  try {
+    const res = await fetch('/api/generate');
+    const data = await res.json();
+
+    document.getElementById('title').value = data.title;
+    document.getElementById('content').value = data.content;
+
+  } catch (err) {
+    alert("Error: " + err.message);
+    console.log(err);
+  }
+}
+</script>
 </body>
 </html>
