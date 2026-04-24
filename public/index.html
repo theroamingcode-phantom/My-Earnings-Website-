@@ -1,28 +1,95 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>My Earning Website</title>
+  <title>My AI Blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: #0f172a;
+      color: white;
+    }
+
+    header {
+      background: #020617;
+      padding: 15px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+      color: #38bdf8;
+    }
+
+    .container {
+      padding: 15px;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    .card {
+      background: #1e293b;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+    }
+
+    button {
+      background: #38bdf8;
+      border: none;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      font-weight: bold;
+    }
+
+    h2 {
+      margin-top: 30px;
+      color: #38bdf8;
+    }
+  </style>
 </head>
+
 <body>
 
-<h1>💰 My AI Blog</h1>
+<header>💰 My AI Blog</header>
 
-<h2>Add Post</h2>
-<input id="title" placeholder="Title"><br><br>
-<textarea id="content" placeholder="Content"></textarea><br><br>
-<button onclick="addPost()">Publish</button>
+<div class="container">
 
-<h2>Posts</h2>
-<div id="posts"></div>
+  <div class="card">
+    <h2>Add Post</h2>
+    <input id="title" placeholder="Title">
+    <textarea id="content" placeholder="Content"></textarea>
+    <button onclick="addPost()">Publish</button>
+  </div>
 
-<h2>📊 Analytics</h2>
-<p>Views: <span id="views">0</span></p>
-<p>Clicks: <span id="clicks">0</span></p>
+  <h2>📝 Posts</h2>
+  <div id="posts"></div>
 
-<button onclick="trackClick()">Test Click</button>
+  <div class="card">
+    <h2>📊 Analytics</h2>
+    <p>Views: <span id="views">0</span></p>
+    <p>Clicks: <span id="clicks">0</span></p>
+    <button onclick="trackClick()">Test Click</button>
+  </div>
+
+</div>
 
 <script>
-// Load posts
 async function loadPosts() {
   const res = await fetch('/api/posts');
   const data = await res.json();
@@ -31,35 +98,34 @@ async function loadPosts() {
   container.innerHTML = '';
 
   data.reverse().forEach(p => {
-    container.innerHTML += `<h3>${p.title}</h3><p>${p.content}</p>`;
+    container.innerHTML += `
+      <div class="card">
+        <h3>${p.title}</h3>
+        <p>${p.content}</p>
+      </div>
+    `;
   });
 }
 
-// Add post
 async function addPost() {
   const title = document.getElementById('title').value;
   const content = document.getElementById('content').value;
 
   await fetch('/api/posts', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ title, content })
   });
 
   loadPosts();
 }
 
-// Track view
 fetch('/api/track/view');
 
-// Track click
 function trackClick() {
   fetch('/api/track/click');
 }
 
-// Load stats
 async function loadStats() {
   const res = await fetch('/api/stats');
   const data = await res.json();
