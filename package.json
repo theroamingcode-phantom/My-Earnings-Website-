@@ -1,7 +1,7 @@
 {
-  "name": "my-earning-site",
+  "name": "ai-blog-generator",
   "version": "1.0.0",
-  "description": "AI Blog Generator Website",
+  "description": "AI Blog Generator using OpenRouter",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {
