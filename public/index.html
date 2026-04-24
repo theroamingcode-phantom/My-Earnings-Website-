@@ -3,18 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>My AI Blog</title>
+  <title>AI Blog Generator</title>
 
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: Arial;
       background: #0f172a;
       color: white;
       padding: 20px;
-    }
-
-    h1 {
-      text-align: center;
     }
 
     .container {
@@ -34,10 +30,9 @@
       margin-top: 10px;
       padding: 10px;
       width: 100%;
+      background: #38bdf8;
       border: none;
       border-radius: 6px;
-      background: #38bdf8;
-      color: black;
       font-weight: bold;
       cursor: pointer;
     }
@@ -53,78 +48,46 @@
 
 <body>
 
-  <h1>💰 My AI Blog</h1>
+<h1>🤖 AI Blog Generator</h1>
 
-  <div class="container">
+<div class="container">
 
-    <button onclick="generatePost()">🤖 Generate AI Post</button>
+  <button onclick="generatePost()">Generate AI Post</button>
 
-    <div class="box">
-      <h3>Add Post</h3>
-
-      <input id="title" placeholder="Title..." />
-      <textarea id="content" rows="5" placeholder="Content..."></textarea>
-
-      <button onclick="publishPost()">Publish</button>
-    </div>
-
-    <div class="box">
-      <h3>📄 Posts</h3>
-      <div id="posts"></div>
-    </div>
-
+  <div class="box">
+    <input id="title" placeholder="Title" />
+    <textarea id="content" rows="5" placeholder="Content"></textarea>
   </div>
 
-  <script>
-    async function generatePost() {
-      try {
-        const res = await fetch("/generate");
+</div>
 
-        // 👇 RAW response debug
-        const text = await res.text();
-        console.log("RAW RESPONSE:", text);
+<script>
+async function generatePost() {
+  try {
+    // 🔥 FULL URL use karo (important)
+    const res = await fetch(window.location.origin + "/generate");
 
-        let data;
-        try {
-          data = JSON.parse(text);
-        } catch (e) {
-          alert("Server JSON nahi bhej raha ❌ (console check karo)");
-          return;
-        }
+    const text = await res.text();
+    console.log("RAW:", text);
 
-        document.getElementById("title").value = data.title || "";
-        document.getElementById("content").value = data.content || "";
+    let data;
 
-      } catch (err) {
-        console.error(err);
-        alert("Error fetching AI post ❌");
-      }
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      alert("Server se HTML aa raha hai ❌ (console check karo)");
+      return;
     }
 
-    function publishPost() {
-      const title = document.getElementById("title").value;
-      const content = document.getElementById("content").value;
+    document.getElementById("title").value = data.title || "";
+    document.getElementById("content").value = data.content || "";
 
-      if (!title || !content) {
-        alert("Title aur content required hai");
-        return;
-      }
-
-      const postDiv = document.createElement("div");
-      postDiv.style.marginTop = "10px";
-      postDiv.style.padding = "10px";
-      postDiv.style.background = "#334155";
-      postDiv.style.borderRadius = "6px";
-
-      postDiv.innerHTML = `<h4>${title}</h4><p>${content}</p>`;
-
-      document.getElementById("posts").prepend(postDiv);
-
-      // clear fields
-      document.getElementById("title").value = "";
-      document.getElementById("content").value = "";
-    }
-  </script>
+  } catch (err) {
+    console.error(err);
+    alert("Fetch error ❌");
+  }
+}
+</script>
 
 </body>
 </html>
