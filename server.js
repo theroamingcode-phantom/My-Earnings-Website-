@@ -1,7 +1,6 @@
 require("dotenv").config();
 
 const express = require("express");
-const fetch = require("node-fetch");
 const cors = require("cors");
 const path = require("path");
 
@@ -9,51 +8,58 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-
-// STATIC FILE SERVE (VERY IMPORTANT)
 app.use(express.static(path.join(__dirname, "public")));
 
-// TEST ROUTE
+const PORT = process.env.PORT || 10000;
+
+// ✅ Home route
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// AI GENERATE ROUTE
+// ✅ AI GENERATE (OPENROUTER — STABLE)
 app.get("/generate", async (req, res) => {
   try {
-    const response = await fetch(
-      "https://api-inference.huggingface.co/models/gpt2",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.HF_TOKEN}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          inputs: "Write a professional blog about earning money online",
-        })
-      }
-    );
-
-    const text = await response.text();
-
-    // 🔴 ERROR FIX (HTML response check)
-    if (text.startsWith("<")) {
+    if (!process.env.OPENROUTER_API_KEY) {
       return res.json({
         title: "Error",
-        content: "Invalid response from AI ❌ (Token / Model issue)"
+        content: "API key missing ❌"
       });
     }
 
-    const data = JSON.parse(text);
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "openai/gpt-3.5-turbo",
+        messages: [
+          {
+            role: "user",
+            content: "Write a high-quality blog about earning money online"
+          }
+        ]
+      })
+    });
+
+    const data = await response.json();
+
+    if (!data || !data.choices) {
+      return res.json({
+        title: "Error",
+        content: "Invalid AI response ❌"
+      });
+    }
 
     res.json({
       title: "AI Generated Blog",
-      content: data[0]?.generated_text || "No content"
+      content: data.choices[0].message.content
     });
 
   } catch (err) {
-    console.log(err);
+    console.error("AI ERROR:", err);
     res.json({
       title: "Error",
       content: "AI generation failed ❌"
@@ -61,8 +67,7 @@ app.get("/generate", async (req, res) => {
   }
 });
 
-// PORT FIX (Render)
-const PORT = process.env.PORT || 10000;
+// ✅ START SERVER
 app.listen(PORT, () => {
-  console.log("Server running on port", PORT);
+  console.log("Server running on port " + PORT);
 });
