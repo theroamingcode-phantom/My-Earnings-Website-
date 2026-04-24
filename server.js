@@ -2,65 +2,76 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const cors = require("cors");
+require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
 
-// ✅ OpenAI setup
+// OpenAI setup
 const OpenAI = require("openai");
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// ================== API ROUTES ==================
-
-// 👉 AI Generate Post
+// ================= AI GENERATE =================
 app.get("/api/generate", async (req, res) => {
   try {
-    const completion = await openai.chat.completions.create({
+    const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
           role: "user",
           content:
-            "Write a professional blog post with a title and content about making money online.",
-        },
+            "Write a professional blog post about earning money online. Give output in this format:\nTitle: ...\nContent: ..."
+        }
       ],
     });
 
-    const text = completion.choices[0].message.content;
+    const text = response.choices[0].message.content;
 
-    // Simple split (title + content)
-    const lines = text.split("\n");
-    const title = lines[0].replace(/#/g, "").trim();
-    const content = lines.slice(1).join("\n");
+    // Extract title + content safely
+    const titleMatch = text.match(/Title:\s*(.*)/i);
+    const contentMatch = text.match(/Content:\s*([\s\S]*)/i);
+
+    const title = titleMatch ? titleMatch[1].trim() : "AI Generated Blog";
+    const content = contentMatch ? contentMatch[1].trim() : text;
 
     res.json({ title, content });
-  } catch (err) {
-    console.error(err);
-    res.json({
-      title: "Error generating",
-      content: "Check API key or server logs",
+
+  } catch (error) {
+    console.error("AI ERROR:", error.message);
+
+    res.status(500).json({
+      title: "Error",
+      content: "AI generation failed. Check API key or logs."
     });
   }
 });
 
-// 👉 Get Posts
+// ================= POSTS =================
 app.get("/api/posts", (req, res) => {
-  const data = fs.readFileSync("posts.json");
-  res.json(JSON.parse(data));
+  try {
+    const data = fs.readFileSync("posts.json");
+    res.json(JSON.parse(data));
+  } catch {
+    res.json([]);
+  }
 });
 
-// 👉 Add Post
 app.post("/api/posts", (req, res) => {
   const { title, content } = req.body;
 
-  const posts = JSON.parse(fs.readFileSync("posts.json"));
+  let posts = [];
+  try {
+    posts = JSON.parse(fs.readFileSync("posts.json"));
+  } catch {}
+
   posts.push({ title, content });
 
   fs.writeFileSync("posts.json", JSON.stringify(posts, null, 2));
@@ -68,27 +79,43 @@ app.post("/api/posts", (req, res) => {
   res.json({ success: true });
 });
 
-// 👉 Analytics
+// ================= ANALYTICS =================
 app.get("/api/stats", (req, res) => {
-  const stats = JSON.parse(fs.readFileSync("analytics.json"));
-  res.json(stats);
+  try {
+    const stats = JSON.parse(fs.readFileSync("analytics.json"));
+    res.json(stats);
+  } catch {
+    res.json({ views: 0, clicks: 0 });
+  }
 });
 
 app.get("/api/track/view", (req, res) => {
-  const stats = JSON.parse(fs.readFileSync("analytics.json"));
+  let stats = { views: 0, clicks: 0 };
+
+  try {
+    stats = JSON.parse(fs.readFileSync("analytics.json"));
+  } catch {}
+
   stats.views++;
   fs.writeFileSync("analytics.json", JSON.stringify(stats, null, 2));
+
   res.json({ success: true });
 });
 
 app.get("/api/track/click", (req, res) => {
-  const stats = JSON.parse(fs.readFileSync("analytics.json"));
+  let stats = { views: 0, clicks: 0 };
+
+  try {
+    stats = JSON.parse(fs.readFileSync("analytics.json"));
+  } catch {}
+
   stats.clicks++;
   fs.writeFileSync("analytics.json", JSON.stringify(stats, null, 2));
+
   res.json({ success: true });
 });
 
-// ================== START SERVER ==================
+// ================= START =================
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
