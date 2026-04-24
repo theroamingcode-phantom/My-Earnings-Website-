@@ -1,59 +1,74 @@
 const express = require("express");
 const fetch = require("node-fetch");
 const cors = require("cors");
-require("dotenv").config();
 
 const app = express();
-app.use(express.json());
 app.use(cors());
+app.use(express.json());
 app.use(express.static("public"));
 
 const PORT = process.env.PORT || 10000;
 
-// HOME PAGE FIX (IMPORTANT)
+// ✅ Home route (IMPORTANT - warna 404 aata hai)
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/public/index.html");
 });
 
-// AI GENERATE ROUTE
+// ✅ AI Generate Route
 app.get("/generate", async (req, res) => {
   try {
+    const HF_TOKEN = process.env.HF_TOKEN;
+
+    if (!HF_TOKEN) {
+      return res.json({
+        title: "Error",
+        content: "HF Token missing ❌"
+      });
+    }
+
     const response = await fetch(
       "https://api-inference.huggingface.co/models/gpt2",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.HF_TOKEN}`,
-          "Content-Type": "application/json"
+          Authorization: `Bearer ${HF_TOKEN}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          inputs: "Write a professional blog about earning money online",
-          parameters: {
-            max_length: 300
-          }
-        })
+          inputs: "Write a high quality blog about earning money online",
+        }),
       }
     );
 
     const text = await response.text();
 
-    // ERROR FIX: HTML aata hai kabhi kabhi
-    if (text.startsWith("<")) {
+    // ❌ HTML error aaya toh handle karo
+    if (text.startsWith("<!DOCTYPE")) {
       return res.json({
         title: "Error",
-        content: "Invalid response from AI ❌ (Token ya model issue)"
+        content: "Invalid response from AI (HTML आया) ❌"
       });
     }
 
-    const data = JSON.parse(text);
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (err) {
+      return res.json({
+        title: "Error",
+        content: "JSON parse error ❌"
+      });
+    }
+
+    const output = data[0]?.generated_text || "No content generated";
 
     res.json({
       title: "AI Generated Blog",
-      content: data[0]?.generated_text || "No content generated"
+      content: output
     });
 
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.json({
       title: "Error",
       content: "AI generation failed ❌"
