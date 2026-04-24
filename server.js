@@ -44,3 +44,25 @@ app.get('/api/stats', (req, res) => {
 });
 
 app.listen(3000, () => console.log("Server running"));
+app.get('/api/auto-post', (req, res) => {
+
+  const topics = [
+    "How to earn money online",
+    "Best AI tools",
+    "Passive income ideas",
+    "Work from home jobs",
+    "Online business ideas"
+  ];
+
+  const randomTopic = topics[Math.floor(Math.random() * topics.length)];
+
+  const newPost = {
+    title: randomTopic,
+    content: randomTopic + " is one of the best ways to grow your income. Start today and stay consistent."
+  };
+
+  posts.push(newPost);
+  fs.writeFileSync('posts.json', JSON.stringify(posts));
+
+  res.json(newPost);
+});
