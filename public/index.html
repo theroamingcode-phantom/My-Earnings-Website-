@@ -13,7 +13,6 @@ body {
   color: white;
 }
 
-/* Sidebar */
 .sidebar {
   width: 220px;
   background: #020617;
@@ -21,9 +20,7 @@ body {
   height: 100vh;
 }
 
-.sidebar h2 {
-  color: #38bdf8;
-}
+.sidebar h2 { color: #38bdf8; }
 
 .sidebar button {
   width: 100%;
@@ -35,13 +32,8 @@ body {
   cursor: pointer;
 }
 
-/* Main */
-.main {
-  flex: 1;
-  padding: 20px;
-}
+.main { flex: 1; padding: 20px; }
 
-/* Card */
 .card {
   background: #1e293b;
   padding: 20px;
@@ -65,18 +57,22 @@ textarea {
   margin-top: 10px;
 }
 
-/* Blog list */
 .blog-item {
   background: #334155;
   margin: 10px 0;
   padding: 10px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 </style>
 </head>
 
 <body>
 
-<!-- Sidebar -->
 <div class="sidebar">
   <h2>🤖 AI SaaS</h2>
   <button onclick="showPage('dashboard')">Dashboard</button>
@@ -84,11 +80,15 @@ textarea {
   <button onclick="showPage('history')">History</button>
 </div>
 
-<!-- Main -->
 <div class="main">
 
-<h2>AI Blog Generator</h2>
-<button class="btn" onclick="upgrade()">Upgrade</button>
+<div class="topbar">
+  <h2>AI Blog Generator</h2>
+  <div>
+    <span id="credits">Credits: 3</span>
+    <button class="btn" onclick="upgrade()">Upgrade</button>
+  </div>
+</div>
 
 <!-- Dashboard -->
 <div id="dashboard" class="page">
@@ -124,17 +124,16 @@ function showPage(page){
   document.getElementById(page).style.display="block";
 }
 
-// upgrade button
-function upgrade(){
-  alert("Upgrade feature coming soon 🚀");
-}
-
 // generate blog
 async function generate(){
   const res = await fetch("/generate");
   const data = await res.json();
 
   document.getElementById("output").value = data.content;
+
+  if(data.creditsLeft !== undefined){
+    document.getElementById("credits").innerText = "Credits: " + data.creditsLeft;
+  }
 }
 
 // publish blog
@@ -146,7 +145,7 @@ async function publishBlog(){
     return;
   }
 
-  await fetch("/save", {
+  const res = await fetch("/save", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -157,7 +156,9 @@ async function publishBlog(){
     })
   });
 
-  alert("Blog Published ✅");
+  const data = await res.json();
+  alert(data.message);
+
   loadBlogs();
 }
 
@@ -174,14 +175,24 @@ async function loadBlogs(){
   blogs.forEach(b=>{
     list.innerHTML += `
       <div class="blog-item">
-        <p>${b.content.substring(0,100)}...</p>
+        <p>${b.content.substring(0,120)}...</p>
         <small>Views: ${b.views}</small>
       </div>
     `;
   });
 }
 
-// initial load
+// upgrade
+async function upgrade(){
+  const res = await fetch("/upgrade");
+  const data = await res.json();
+
+  alert(data.message);
+
+  document.getElementById("credits").innerText = "Credits: Unlimited";
+}
+
+// init
 loadBlogs();
 
 </script>
