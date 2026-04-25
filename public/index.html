@@ -1,72 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>AI Blog SaaS</title>
+<title>AI SaaS Pro</title>
 
 <style>
-body {
-  margin: 0;
-  font-family: Arial;
-  display: flex;
-  background: #0f172a;
-  color: white;
-}
+body { margin:0; font-family:Arial; background:#0f172a; color:white; display:flex; }
 
 .sidebar {
-  width: 220px;
-  background: #020617;
-  padding: 20px;
-  height: 100vh;
+  width:220px; background:#020617; padding:20px; height:100vh;
 }
-
-.sidebar h2 { color: #38bdf8; }
 
 .sidebar button {
-  width: 100%;
-  margin: 10px 0;
-  padding: 10px;
-  background: #1e293b;
-  border: none;
-  color: white;
-  cursor: pointer;
+  width:100%; margin:10px 0; padding:10px;
+  background:#1e293b; border:none; color:white; cursor:pointer;
 }
 
-.main { flex: 1; padding: 20px; }
+.main { flex:1; padding:20px; }
 
 .card {
-  background: #1e293b;
-  padding: 20px;
-  border-radius: 10px;
-  margin-top: 20px;
+  background:#1e293b; padding:20px;
+  border-radius:10px; margin-top:20px;
 }
 
 .btn {
-  padding: 10px;
-  background: #38bdf8;
-  border: none;
-  cursor: pointer;
-  color: black;
-  font-weight: bold;
-  margin-top: 10px;
+  padding:10px; background:#38bdf8;
+  border:none; cursor:pointer; margin-top:10px;
 }
 
-textarea {
-  width: 100%;
-  height: 200px;
-  margin-top: 10px;
+input, textarea {
+  width:100%; padding:10px; margin-top:10px;
 }
 
 .blog-item {
-  background: #334155;
-  margin: 10px 0;
-  padding: 10px;
-}
-
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  background:#334155; margin:10px 0; padding:10px;
 }
 </style>
 </head>
@@ -74,43 +41,47 @@ textarea {
 <body>
 
 <div class="sidebar">
-  <h2>🤖 AI SaaS</h2>
-  <button onclick="showPage('dashboard')">Dashboard</button>
-  <button onclick="showPage('generator')">Generate</button>
-  <button onclick="showPage('history')">History</button>
+  <h2>🚀 SaaS</h2>
+  <button onclick="show('auth')">Login</button>
+  <button onclick="show('generator')">Generate</button>
+  <button onclick="show('history')">History</button>
 </div>
 
 <div class="main">
 
-<div class="topbar">
-  <h2>AI Blog Generator</h2>
-  <div>
-    <span id="credits">Credits: 3</span>
-    <button class="btn" onclick="upgrade()">Upgrade</button>
-  </div>
+<h2>AI Blog SaaS</h2>
+<div>
+  <span id="credits">Credits: -</span>
+  <button class="btn" onclick="upgrade()">Upgrade</button>
 </div>
 
-<!-- Dashboard -->
-<div id="dashboard" class="page">
+<!-- AUTH -->
+<div id="auth" class="page">
   <div class="card">
-    <h3>Total Blogs: <span id="count">0</span></h3>
+    <h3>Signup</h3>
+    <input id="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Password">
+    <button class="btn" onclick="signup()">Signup</button>
+
+    <h3>Login</h3>
+    <button class="btn" onclick="login()">Login</button>
   </div>
 </div>
 
-<!-- Generator -->
+<!-- GENERATOR -->
 <div id="generator" class="page" style="display:none;">
   <div class="card">
     <button class="btn" onclick="generate()">Generate Blog</button>
     <textarea id="output"></textarea>
-    <button class="btn" onclick="publishBlog()">Publish</button>
+    <button class="btn" onclick="publish()">Publish</button>
   </div>
 </div>
 
-<!-- History -->
+<!-- HISTORY -->
 <div id="history" class="page" style="display:none;">
   <div class="card">
-    <h3>Published Blogs</h3>
-    <div id="blogList"></div>
+    <h3>Your Blogs</h3>
+    <div id="blogs"></div>
   </div>
 </div>
 
@@ -118,82 +89,120 @@ textarea {
 
 <script>
 
-// page switch
-function showPage(page){
-  document.querySelectorAll(".page").forEach(p => p.style.display="none");
-  document.getElementById(page).style.display="block";
+function show(id){
+  document.querySelectorAll(".page").forEach(p=>p.style.display="none");
+  document.getElementById(id).style.display="block";
 }
 
-// generate blog
+function getToken(){
+  return localStorage.getItem("token");
+}
+
+// ===== AUTH =====
+
+async function signup(){
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  await fetch("/signup", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ email, password })
+  });
+
+  alert("Signup done ✅");
+}
+
+async function login(){
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  const res = await fetch("/login", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ email, password })
+  });
+
+  const data = await res.json();
+
+  if(data.token){
+    localStorage.setItem("token", data.token);
+    alert("Login success 🚀");
+  } else {
+    alert(data.message);
+  }
+}
+
+// ===== GENERATE =====
+
 async function generate(){
-  const res = await fetch("/generate");
+  const res = await fetch("/generate", {
+    headers:{ "Authorization": getToken() }
+  });
+
   const data = await res.json();
 
   document.getElementById("output").value = data.content;
 
   if(data.creditsLeft !== undefined){
-    document.getElementById("credits").innerText = "Credits: " + data.creditsLeft;
+    document.getElementById("credits").innerText =
+      "Credits: " + data.creditsLeft;
   }
 }
 
-// publish blog
-async function publishBlog(){
+// ===== PUBLISH =====
+
+async function publish(){
   const content = document.getElementById("output").value;
 
-  if(!content){
-    alert("Generate blog first");
-    return;
-  }
-
-  const res = await fetch("/save", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
+  await fetch("/save", {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization": getToken()
     },
-    body: JSON.stringify({
-      title: "My Blog",
-      content: content
-    })
+    body: JSON.stringify({ title:"Blog", content })
   });
 
-  const data = await res.json();
-  alert(data.message);
-
+  alert("Saved ✅");
   loadBlogs();
 }
 
-// load blogs
+// ===== BLOGS =====
+
 async function loadBlogs(){
-  const res = await fetch("/blogs");
-  const blogs = await res.json();
+  const res = await fetch("/blogs", {
+    headers:{ "Authorization": getToken() }
+  });
 
-  document.getElementById("count").innerText = blogs.length;
+  const data = await res.json();
 
-  const list = document.getElementById("blogList");
-  list.innerHTML = "";
+  const div = document.getElementById("blogs");
+  div.innerHTML = "";
 
-  blogs.forEach(b=>{
-    list.innerHTML += `
+  data.forEach(b=>{
+    div.innerHTML += `
       <div class="blog-item">
-        <p>${b.content.substring(0,120)}...</p>
+        <p>${b.content.substring(0,100)}...</p>
         <small>Views: ${b.views}</small>
       </div>
     `;
   });
 }
 
-// upgrade
-async function upgrade(){
-  const res = await fetch("/upgrade");
-  const data = await res.json();
+// ===== UPGRADE =====
 
+async function upgrade(){
+  const res = await fetch("/upgrade", {
+    method:"POST",
+    headers:{ "Authorization": getToken() }
+  });
+
+  const data = await res.json();
   alert(data.message);
 
   document.getElementById("credits").innerText = "Credits: Unlimited";
 }
-
-// init
-loadBlogs();
 
 </script>
 
