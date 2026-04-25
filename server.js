@@ -1,178 +1,77 @@
-require("dotenv").config();
-
 const express = require("express");
-const cors = require("cors");
-const path = require("path");
-const bcrypt = require("bcryptjs"); // FIXED
-const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
+const cors = require("cors");
+require("dotenv").config();
 
 const app = express();
 
-app.use(cors());
+// Middleware
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
+app.use(cors());
+app.use(express.static("public"));
 
-const PORT = process.env.PORT || 10000;
-const SECRET = process.env.JWT_SECRET || "secret";
-
-// ===== MONGODB =====
+// MongoDB Connection
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch(err => console.log(err));
+.then(() => console.log("MongoDB Connected ✅"))
+.catch(err => console.log("Mongo Error ❌", err));
 
-// ===== MODELS =====
-const User = mongoose.model("User", new mongoose.Schema({
-  email: { type: String, unique: true },
-  password: String,
-  credits: { type: Number, default: 3 },
-  isPro: { type: Boolean, default: false }
-}));
-
-const Blog = mongoose.model("Blog", new mongoose.Schema({
-  userId: String,
+// Simple Schema (Blog)
+const BlogSchema = new mongoose.Schema({
   title: String,
   content: String,
-  views: { type: Number, default: 0 }
-}));
+  createdAt: { type: Date, default: Date.now }
+});
 
-// ===== AUTH =====
-function auth(req, res, next) {
-  const token = req.headers.authorization;
-  if (!token) return res.json({ message: "No token ❌" });
+const Blog = mongoose.model("Blog", BlogSchema);
 
-  try {
-    const decoded = jwt.verify(token, SECRET);
-    req.userId = decoded.id;
-    next();
-  } catch {
-    res.json({ message: "Invalid token ❌" });
-  }
-}
-
-// ===== HOME =====
+// Test Route
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.send("Server Running ✅");
 });
 
-// ===== SIGNUP =====
-app.post("/signup", async (req, res) => {
-  const { email, password } = req.body;
-
-  const hashed = await bcrypt.hash(password, 10);
-
+// AI Generate Route (Working Demo)
+app.post("/generate", async (req, res) => {
   try {
-    await User.create({ email, password: hashed });
-    res.json({ message: "User created ✅" });
-  } catch {
-    res.json({ message: "User exists ❌" });
+    const { prompt } = req.body;
+
+    const response = {
+      title: "AI Generated Blog",
+      content: `This is AI generated content for: ${prompt} 🚀`
+    };
+
+    res.json(response);
+  } catch (err) {
+    res.status(500).json({ error: "AI Error ❌" });
   }
 });
 
-// ===== LOGIN =====
-app.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-
-  const user = await User.findOne({ email });
-  if (!user) return res.json({ message: "User not found ❌" });
-
-  const match = await bcrypt.compare(password, user.password);
-  if (!match) return res.json({ message: "Wrong password ❌" });
-
-  const token = jwt.sign({ id: user._id }, SECRET);
-
-  res.json({ token });
-});
-
-// ===== AI GENERATE =====
-app.get("/generate", auth, async (req, res) => {
-  const user = await User.findById(req.userId);
-
-  if (!user.isPro && user.credits <= 0) {
-    return res.json({
-      title: "Limit Reached ❌",
-      content: "Upgrade to continue 🚀"
-    });
-  }
-
-  if (!user.isPro) {
-    user.credits--;
-    await user.save();
-  }
-
+// Save Blog
+app.post("/save", async (req, res) => {
   try {
-    const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-3.5-turbo",
-        messages: [
-          { role: "user", content: "Write a blog about earning money online" }
-        ]
-      })
-    });
+    const { title, content } = req.body;
 
-    const data = await r.json();
+    const blog = new Blog({ title, content });
+    await blog.save();
 
-    res.json({
-      content: data.choices?.[0]?.message?.content || "No content",
-      creditsLeft: user.isPro ? "Unlimited" : user.credits
-    });
-
-  } catch {
-    res.json({ content: "AI failed ❌" });
+    res.json({ message: "Saved ✅" });
+  } catch (err) {
+    res.status(500).json({ error: "Save Error ❌" });
   }
 });
 
-// ===== SAVE BLOG =====
-app.post("/save", auth, async (req, res) => {
-  const { title, content } = req.body;
-
-  await Blog.create({
-    userId: req.userId,
-    title,
-    content
-  });
-
-  res.json({ message: "Saved ✅" });
+// Get All Blogs
+app.get("/blogs", async (req, res) => {
+  try {
+    const blogs = await Blog.find().sort({ createdAt: -1 });
+    res.json(blogs);
+  } catch (err) {
+    res.status(500).json({ error: "Fetch Error ❌" });
+  }
 });
 
-// ===== GET BLOGS =====
-app.get("/blogs", auth, async (req, res) => {
-  const blogs = await Blog.find({ userId: req.userId });
-  res.json(blogs);
-});
+// Start Server
+const PORT = process.env.PORT || 10000;
 
-// ===== VIEW BLOG =====
-app.get("/blog/:id", async (req, res) => {
-  const blog = await Blog.findById(req.params.id);
-
-  if (!blog) return res.send("Not found");
-
-  blog.views++;
-  await blog.save();
-
-  res.send(`
-    <h1>${blog.title}</h1>
-    <p>${blog.content}</p>
-    <p>Views: ${blog.views}</p>
-  `);
-});
-
-// ===== UPGRADE =====
-app.post("/upgrade", auth, async (req, res) => {
-  await User.findByIdAndUpdate(req.userId, {
-    isPro: true,
-    credits: 999
-  });
-
-  res.json({ message: "Upgraded 🚀" });
-});
-
-// ===== START =====
 app.listen(PORT, () => {
-  console.log("Server running on port", PORT);
+  console.log("Server running on port " + PORT);
 });
