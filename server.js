@@ -4,74 +4,57 @@ const cors = require("cors");
 require("dotenv").config();
 
 const app = express();
-
-// Middleware
 app.use(express.json());
 app.use(cors());
-app.use(express.static("public"));
 
-// MongoDB Connection
+// ================= DATABASE =================
 mongoose.connect(process.env.MONGO_URI)
-.then(() => console.log("MongoDB Connected ✅"))
-.catch(err => console.log("Mongo Error ❌", err));
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch(err => console.log("❌ MongoDB Error:", err.message));
 
-// Simple Schema (Blog)
-const BlogSchema = new mongoose.Schema({
-  title: String,
+// ================= SCHEMA =================
+const Post = mongoose.model("Post", {
+  prompt: String,
   content: String,
   createdAt: { type: Date, default: Date.now }
 });
 
-const Blog = mongoose.model("Blog", BlogSchema);
+// ================= ROUTES =================
 
-// Test Route
+// Test route
 app.get("/", (req, res) => {
-  res.send("Server Running ✅");
+  res.send("🚀 Server Running");
 });
 
-// AI Generate Route (Working Demo)
+// 🔥 GENERATE API
 app.post("/generate", async (req, res) => {
   try {
     const { prompt } = req.body;
 
-    const response = {
-      title: "AI Generated Blog",
-      content: `This is AI generated content for: ${prompt} 🚀`
-    };
+    if (!prompt) {
+      return res.status(400).json({ error: "Prompt required" });
+    }
 
-    res.json(response);
+    // 👉 Temporary AI (stable fallback)
+    const content = `🔥 AI Generated Content:\n\n${prompt}\n\nThis is a demo AI response. Upgrade for real AI.`;
+
+    // Save in DB
+    const newPost = await Post.create({ prompt, content });
+
+    res.json({
+      success: true,
+      content: newPost.content
+    });
+
   } catch (err) {
-    res.status(500).json({ error: "AI Error ❌" });
+    console.log("❌ Generate Error:", err.message);
+    res.status(500).json({ error: "AI failed" });
   }
 });
 
-// Save Blog
-app.post("/save", async (req, res) => {
-  try {
-    const { title, content } = req.body;
-
-    const blog = new Blog({ title, content });
-    await blog.save();
-
-    res.json({ message: "Saved ✅" });
-  } catch (err) {
-    res.status(500).json({ error: "Save Error ❌" });
-  }
-});
-
-// Get All Blogs
-app.get("/blogs", async (req, res) => {
-  try {
-    const blogs = await Blog.find().sort({ createdAt: -1 });
-    res.json(blogs);
-  } catch (err) {
-    res.status(500).json({ error: "Fetch Error ❌" });
-  }
-});
-
-// Start Server
+// ================= SERVER =================
 const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, () => {
-  console.log("Server running on port " + PORT);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
