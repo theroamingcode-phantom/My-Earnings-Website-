@@ -1,238 +1,174 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>AI SaaS Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI SaaS Dashboard</title>
 
 <style>
 body {
-  margin:0;
-  font-family:Arial;
-  background:#0f172a;
-  color:white;
-  display:flex;
+  margin: 0;
+  font-family: Arial;
+  background: #0f172a;
+  color: white;
 }
 
-/* SIDEBAR */
+.container {
+  display: flex;
+}
+
+/* Sidebar */
 .sidebar {
-  width:220px;
-  background:#020617;
-  padding:20px;
-  height:100vh;
+  width: 220px;
+  background: #020617;
+  height: 100vh;
+  padding: 20px;
 }
 
-.sidebar h2 { color:#38bdf8; }
+.sidebar h2 {
+  color: #38bdf8;
+}
 
 .sidebar button {
-  width:100%;
-  margin:10px 0;
-  padding:10px;
-  background:#1e293b;
-  border:none;
-  color:white;
-  cursor:pointer;
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  background: #1e293b;
+  color: white;
+  border: none;
+  cursor: pointer;
 }
 
-/* MAIN */
+/* Main */
 .main {
-  flex:1;
-  padding:20px;
+  flex: 1;
+  padding: 20px;
 }
 
+/* Cards */
 .card {
-  background:#1e293b;
-  padding:20px;
-  border-radius:10px;
-  margin-top:20px;
+  background: #1e293b;
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
 }
 
-.btn {
-  padding:10px;
-  background:#38bdf8;
-  border:none;
-  cursor:pointer;
-  margin-top:10px;
-  width:100%;
-}
-
+/* Input */
 input, textarea {
-  width:100%;
-  padding:10px;
-  margin-top:10px;
-  border:none;
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 5px;
+  border: none;
 }
 
-.blog {
-  background:#334155;
-  padding:10px;
-  margin:10px 0;
+button.generate {
+  background: #38bdf8;
+  border: none;
+  padding: 10px;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+/* Output */
+#output {
+  white-space: pre-line;
+  margin-top: 15px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="sidebar">
-  <h2>🚀 SaaS</h2>
-  <button onclick="show('auth')">Login</button>
-  <button onclick="show('generator')">Generate</button>
-  <button onclick="show('history')">History</button>
-</div>
+<div class="container">
 
-<div class="main">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>🚀 AI SaaS</h2>
 
-<h2>AI Blog Generator</h2>
-
-<div>
-  <span id="credits">Credits: -</span>
-  <button class="btn" onclick="upgrade()">Upgrade</button>
-</div>
-
-<!-- AUTH -->
-<div id="auth" class="page">
-  <div class="card">
-    <h3>Signup / Login</h3>
-    <input id="email" placeholder="Email">
-    <input id="password" type="password" placeholder="Password">
-    <button class="btn" onclick="signup()">Signup</button>
-    <button class="btn" onclick="login()">Login</button>
+    <button onclick="showSection('generate')">Generate</button>
+    <button onclick="showSection('history')">History</button>
+    <button onclick="upgrade()">Upgrade 💰</button>
   </div>
-</div>
 
-<!-- GENERATOR -->
-<div id="generator" class="page" style="display:none;">
-  <div class="card">
-    <button class="btn" onclick="generate()">Generate Blog</button>
-    <textarea id="output" rows="10"></textarea>
-    <button class="btn" onclick="publish()">Publish</button>
-  </div>
-</div>
+  <!-- Main -->
+  <div class="main">
 
-<!-- HISTORY -->
-<div id="history" class="page" style="display:none;">
-  <div class="card">
-    <h3>Your Blogs</h3>
-    <div id="blogs"></div>
+    <!-- Generate Section -->
+    <div id="generateSection" class="card">
+      <h2>AI Content Generator</h2>
+
+      <input id="prompt" placeholder="Enter topic..." />
+
+      <button class="generate" onclick="generateContent()">Generate</button>
+
+      <div id="output"></div>
+    </div>
+
+    <!-- History -->
+    <div id="historySection" class="card" style="display:none;">
+      <h2>History</h2>
+      <div id="history"></div>
+    </div>
+
   </div>
-</div>
 
 </div>
 
 <script>
 
-// ===== UI SWITCH =====
-function show(id){
-  document.querySelectorAll(".page").forEach(p=>p.style.display="none");
-  document.getElementById(id).style.display="block";
-}
+function showSection(section) {
+  document.getElementById("generateSection").style.display = "none";
+  document.getElementById("historySection").style.display = "none";
 
-// ===== TOKEN =====
-function getToken(){
-  return localStorage.getItem("token");
-}
-
-// ===== SIGNUP =====
-async function signup(){
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-
-  await fetch("/signup", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ email, password })
-  });
-
-  alert("Signup done ✅");
-}
-
-// ===== LOGIN =====
-async function login(){
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-
-  const res = await fetch("/login", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ email, password })
-  });
-
-  const data = await res.json();
-
-  if(data.token){
-    localStorage.setItem("token", data.token);
-    alert("Login success 🚀");
-    loadBlogs();
+  if (section === "generate") {
+    document.getElementById("generateSection").style.display = "block";
   } else {
-    alert(data.message);
+    document.getElementById("historySection").style.display = "block";
   }
 }
 
-// ===== GENERATE =====
-async function generate(){
-  const res = await fetch("/generate", {
-    headers:{ "Authorization": getToken() }
-  });
+// 🔥 Generate API call
+async function generateContent() {
+  const prompt = document.getElementById("prompt").value;
 
-  const data = await res.json();
+  if (!prompt) {
+    alert("Enter prompt");
+    return;
+  }
 
-  document.getElementById("output").value = data.content;
+  document.getElementById("output").innerText = "Generating...";
 
-  if(data.creditsLeft !== undefined){
-    document.getElementById("credits").innerText =
-      "Credits: " + data.creditsLeft;
+  try {
+    const res = await fetch("/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ prompt })
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      document.getElementById("output").innerText = data.error;
+      return;
+    }
+
+    document.getElementById("output").innerText = data.content;
+
+    // Save history
+    const historyDiv = document.getElementById("history");
+    historyDiv.innerHTML += `<p>📝 ${prompt}</p>`;
+
+  } catch (err) {
+    document.getElementById("output").innerText = "Server error";
   }
 }
 
-// ===== PUBLISH =====
-async function publish(){
-  const content = document.getElementById("output").value;
-
-  await fetch("/save", {
-    method:"POST",
-    headers:{
-      "Content-Type":"application/json",
-      "Authorization": getToken()
-    },
-    body: JSON.stringify({ title:"Blog", content })
-  });
-
-  alert("Saved ✅");
-  loadBlogs();
-}
-
-// ===== LOAD BLOGS =====
-async function loadBlogs(){
-  const res = await fetch("/blogs", {
-    headers:{ "Authorization": getToken() }
-  });
-
-  const data = await res.json();
-
-  const div = document.getElementById("blogs");
-  div.innerHTML = "";
-
-  data.forEach(b=>{
-    div.innerHTML += `
-      <div class="blog">
-        <p>${b.content.substring(0,100)}...</p>
-        <small>Views: ${b.views}</small><br>
-        <a href="/blog/${b._id}" target="_blank">View</a>
-      </div>
-    `;
-  });
-}
-
-// ===== UPGRADE =====
-async function upgrade(){
-  const res = await fetch("/upgrade", {
-    method:"POST",
-    headers:{ "Authorization": getToken() }
-  });
-
-  const data = await res.json();
-
-  alert(data.message);
-  document.getElementById("credits").innerText = "Credits: Unlimited";
+// 💰 Upgrade button
+function upgrade() {
+  alert("Upgrade feature coming soon 💰");
 }
 
 </script>
