@@ -12,16 +12,27 @@ app.use(express.static(path.join(__dirname, "public")));
 
 const PORT = process.env.PORT || 10000;
 
-// ===== TEMP DATABASE (memory) =====
+// ===== TEMP DATABASE =====
 let blogs = [];
+let credits = 3; // free limit
 
 // ===== HOME =====
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// ===== AI GENERATE =====
+// ===== AI GENERATE (WITH CREDITS) =====
 app.get("/generate", async (req, res) => {
+  if (credits <= 0) {
+    return res.json({
+      title: "Limit Reached ❌",
+      content: "Upgrade to continue 🚀",
+      creditsLeft: 0
+    });
+  }
+
+  credits--;
+
   try {
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -44,7 +55,8 @@ app.get("/generate", async (req, res) => {
 
     res.json({
       title: "AI Generated Blog",
-      content: data.choices?.[0]?.message?.content || "No content"
+      content: data.choices?.[0]?.message?.content || "No content",
+      creditsLeft: credits
     });
 
   } catch (err) {
@@ -56,7 +68,13 @@ app.get("/generate", async (req, res) => {
   }
 });
 
-// ===== SAVE BLOG (PUBLISH BUTTON) =====
+// ===== UPGRADE (DEMO PAYMENT) =====
+app.get("/upgrade", (req, res) => {
+  credits = 999; // unlimited access
+  res.json({ message: "Upgraded Successfully 🚀" });
+});
+
+// ===== SAVE BLOG =====
 app.post("/save", (req, res) => {
   const { title, content } = req.body;
 
@@ -76,12 +94,12 @@ app.post("/save", (req, res) => {
   res.json({ message: "Blog published ✅" });
 });
 
-// ===== GET ALL BLOGS =====
+// ===== GET BLOGS =====
 app.get("/blogs", (req, res) => {
   res.json(blogs);
 });
 
-// ===== VIEW BLOG + INCREASE VIEWS =====
+// ===== VIEW BLOG =====
 app.get("/view/:id", (req, res) => {
   const blog = blogs.find(b => b.id == req.params.id);
 
@@ -89,7 +107,7 @@ app.get("/view/:id", (req, res) => {
     return res.status(404).json({ message: "Not found ❌" });
   }
 
-  blog.views += 1;
+  blog.views++;
 
   res.json(blog);
 });
