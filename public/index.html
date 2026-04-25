@@ -5,35 +5,67 @@
 <title>AI SaaS Pro</title>
 
 <style>
-body { margin:0; font-family:Arial; background:#0f172a; color:white; display:flex; }
-
-.sidebar {
-  width:220px; background:#020617; padding:20px; height:100vh;
+body {
+  margin:0;
+  font-family:Arial;
+  background:#0f172a;
+  color:white;
+  display:flex;
 }
+
+/* SIDEBAR */
+.sidebar {
+  width:220px;
+  background:#020617;
+  padding:20px;
+  height:100vh;
+}
+
+.sidebar h2 { color:#38bdf8; }
 
 .sidebar button {
-  width:100%; margin:10px 0; padding:10px;
-  background:#1e293b; border:none; color:white; cursor:pointer;
+  width:100%;
+  margin:10px 0;
+  padding:10px;
+  background:#1e293b;
+  border:none;
+  color:white;
+  cursor:pointer;
 }
 
-.main { flex:1; padding:20px; }
+/* MAIN */
+.main {
+  flex:1;
+  padding:20px;
+}
 
 .card {
-  background:#1e293b; padding:20px;
-  border-radius:10px; margin-top:20px;
+  background:#1e293b;
+  padding:20px;
+  border-radius:10px;
+  margin-top:20px;
 }
 
 .btn {
-  padding:10px; background:#38bdf8;
-  border:none; cursor:pointer; margin-top:10px;
+  padding:10px;
+  background:#38bdf8;
+  border:none;
+  cursor:pointer;
+  margin-top:10px;
+  width:100%;
 }
 
 input, textarea {
-  width:100%; padding:10px; margin-top:10px;
+  width:100%;
+  padding:10px;
+  margin-top:10px;
+  border:none;
 }
 
-.blog-item {
-  background:#334155; margin:10px 0; padding:10px;
+.blog {
+  background:#334155;
+  padding:10px;
+  margin:10px 0;
 }
 </style>
 </head>
@@ -49,7 +81,8 @@ input, textarea {
 
 <div class="main">
 
-<h2>AI Blog SaaS</h2>
+<h2>AI Blog Generator</h2>
+
 <div>
   <span id="credits">Credits: -</span>
   <button class="btn" onclick="upgrade()">Upgrade</button>
@@ -58,12 +91,10 @@ input, textarea {
 <!-- AUTH -->
 <div id="auth" class="page">
   <div class="card">
-    <h3>Signup</h3>
+    <h3>Signup / Login</h3>
     <input id="email" placeholder="Email">
     <input id="password" type="password" placeholder="Password">
     <button class="btn" onclick="signup()">Signup</button>
-
-    <h3>Login</h3>
     <button class="btn" onclick="login()">Login</button>
   </div>
 </div>
@@ -72,7 +103,7 @@ input, textarea {
 <div id="generator" class="page" style="display:none;">
   <div class="card">
     <button class="btn" onclick="generate()">Generate Blog</button>
-    <textarea id="output"></textarea>
+    <textarea id="output" rows="10"></textarea>
     <button class="btn" onclick="publish()">Publish</button>
   </div>
 </div>
@@ -89,17 +120,18 @@ input, textarea {
 
 <script>
 
+// ===== UI SWITCH =====
 function show(id){
   document.querySelectorAll(".page").forEach(p=>p.style.display="none");
   document.getElementById(id).style.display="block";
 }
 
+// ===== TOKEN =====
 function getToken(){
   return localStorage.getItem("token");
 }
 
-// ===== AUTH =====
-
+// ===== SIGNUP =====
 async function signup(){
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
@@ -113,6 +145,7 @@ async function signup(){
   alert("Signup done ✅");
 }
 
+// ===== LOGIN =====
 async function login(){
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
@@ -128,13 +161,13 @@ async function login(){
   if(data.token){
     localStorage.setItem("token", data.token);
     alert("Login success 🚀");
+    loadBlogs();
   } else {
     alert(data.message);
   }
 }
 
 // ===== GENERATE =====
-
 async function generate(){
   const res = await fetch("/generate", {
     headers:{ "Authorization": getToken() }
@@ -151,7 +184,6 @@ async function generate(){
 }
 
 // ===== PUBLISH =====
-
 async function publish(){
   const content = document.getElementById("output").value;
 
@@ -168,8 +200,7 @@ async function publish(){
   loadBlogs();
 }
 
-// ===== BLOGS =====
-
+// ===== LOAD BLOGS =====
 async function loadBlogs(){
   const res = await fetch("/blogs", {
     headers:{ "Authorization": getToken() }
@@ -182,16 +213,16 @@ async function loadBlogs(){
 
   data.forEach(b=>{
     div.innerHTML += `
-      <div class="blog-item">
+      <div class="blog">
         <p>${b.content.substring(0,100)}...</p>
-        <small>Views: ${b.views}</small>
+        <small>Views: ${b.views}</small><br>
+        <a href="/blog/${b._id}" target="_blank">View</a>
       </div>
     `;
   });
 }
 
 // ===== UPGRADE =====
-
 async function upgrade(){
   const res = await fetch("/upgrade", {
     method:"POST",
@@ -199,8 +230,8 @@ async function upgrade(){
   });
 
   const data = await res.json();
-  alert(data.message);
 
+  alert(data.message);
   document.getElementById("credits").innerText = "Credits: Unlimited";
 }
 
