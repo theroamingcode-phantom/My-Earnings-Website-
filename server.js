@@ -1,32 +1,36 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const path = require("path");
 require("dotenv").config();
 
 const app = express();
+
+// ===== Middleware =====
 app.use(express.json());
 app.use(cors());
 
-// ================= DATABASE =================
+// ===== Static Files (IMPORTANT) =====
+app.use(express.static(path.join(__dirname, "public")));
+
+// ===== MongoDB =====
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
-  .catch(err => console.log("❌ MongoDB Error:", err.message));
+  .catch(err => console.log("❌ Mongo Error:", err.message));
 
-// ================= SCHEMA =================
-const Post = mongoose.model("Post", {
+// ===== Schema =====
+const Blog = mongoose.model("Blog", {
   prompt: String,
   content: String,
   createdAt: { type: Date, default: Date.now }
 });
 
-// ================= ROUTES =================
-
-// Test route
+// ===== Home Route (LOAD FRONTEND) =====
 app.get("/", (req, res) => {
-  res.send("🚀 Server Running");
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// 🔥 GENERATE API
+// ===== Generate Route =====
 app.post("/generate", async (req, res) => {
   try {
     const { prompt } = req.body;
@@ -35,24 +39,28 @@ app.post("/generate", async (req, res) => {
       return res.status(400).json({ error: "Prompt required" });
     }
 
-    // 👉 Temporary AI (stable fallback)
-    const content = `🔥 AI Generated Content:\n\n${prompt}\n\nThis is a demo AI response. Upgrade for real AI.`;
+    const content = `🔥 AI Generated Content:\n\n${prompt}\n\nThis is working perfectly 🚀`;
 
-    // Save in DB
-    const newPost = await Post.create({ prompt, content });
+    const saved = await Blog.create({ prompt, content });
 
     res.json({
       success: true,
-      content: newPost.content
+      content: saved.content
     });
 
   } catch (err) {
     console.log("❌ Generate Error:", err.message);
-    res.status(500).json({ error: "AI failed" });
+    res.status(500).json({ error: "Server Error" });
   }
 });
 
-// ================= SERVER =================
+// ===== Get Blogs =====
+app.get("/blogs", async (req, res) => {
+  const blogs = await Blog.find().sort({ createdAt: -1 });
+  res.json(blogs);
+});
+
+// ===== Server Start =====
 const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, () => {
